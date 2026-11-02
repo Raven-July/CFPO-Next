@@ -68,3 +68,28 @@ A successful process with zero gradients proves execution, not learning.
 
 After training, keep the reference `Counterfactual-Eval` directory separate from
 training changes and evaluate the saved checkpoint against the baseline.
+
+## Verified smoke run (2026-11-02)
+
+Slurm job 220052 completed two steps on one A800 80GB in 6m03s with exit code
+0:0 and Slurm batch MaxRSS 28.20 GB. Runtime: Python 3.12.3, PyTorch 2.10.0+cu129,
+Transformers 5.3.0 and vLLM 0.18.0 in the historical SIF, plus external packages.
+The Transformers cc7ab9be overlay from the Qwen3.5 experiment was not used.
+
+This run sampled 32 ViRL39K training rows and four Geo3K validation rows,
+used batch/mini-batch size 4, four responses per prompt, max prompt length 4096,
+max response length 1024, and disabled pre-training validation. Save/test
+frequency was 2. The Ray driver advertised eight CPUs and a 2 GiB object store;
+the rollout checkpoint update bucket was 256 MiB. SwanLab 0.10.3 ran offline
+with its missing dependencies installed as external packages for Python 3.12.
+
+TransferQueue's default eight storage actors plus its controller exhausted
+the eight Ray CPUs and prevented initialization. This launcher now defaults to
+one storage unit; larger runs can override this parameter at the command line.
+
+Both steps had nonzero advantages and gradient norms (1.361 and 1.695).
+The global_step_2 checkpoint includes model, optimizer and extra state;
+training/validation generation JSONL and offline SwanLab logs were produced.
+Four-sample validation accuracy was 0.25 and format reward was 0.0. This verifies
+the training pipeline, not full benchmark performance. Inspect generated
+answers and their think/boxed formatting before scaling up.
