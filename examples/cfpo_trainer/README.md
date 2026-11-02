@@ -174,6 +174,18 @@ The evaluation wrapper merges FSDP model shards when CHECKPOINT_ACTOR is supplie
 It checks that every result has as many rows as its annotation file, since the
 original evaluator catches per-dataset errors. Always check Slurm exit status.
 
+## Full-run memory correction
+
+Job 220059 completed initial validation on 2,837 filtered validation rows but
+was killed by the Slurm cgroup OOM handler before the first training update.
+The job ended OUT_OF_MEMORY after 26m42s. The default null val_batch_size
+submitted the entire validation set as one batch, retaining large multimodal
+payloads simultaneously. The cluster wrapper now sets data.val_batch_size=16
+and requests 128 GiB of host RAM instead of 64 GiB. Validation still covers
+every row and aggregates metrics across batches; neither the dataset nor the
+training batch size is reduced. This correction requires another cluster run
+to verify. Preserve the failed run's logs by using a fresh experiment name.
+
 ## Separate-server dashboard
 
 SwanLab 0.10.3 distinguishes offline sync records from the legacy local dashboard

@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
+#SBATCH --mem=128G
 #SBATCH --time=12:00:00
 #SBATCH --comment=xitucheng213
 #SBATCH --output=/groups/xitucheng213/home/share/u2024213357/GRPO/logs/cfpo-%j.out
@@ -66,6 +66,7 @@ bash examples/cfpo_trainer/run_qwen3_vl_2b_fsdp.sh \
   ++ray_kwargs.ray_init.num_cpus=8 \
   ++ray_kwargs.ray_init.object_store_memory=2147483648 \
   data.filter_overlong_prompts_workers=2 \
+  data.val_batch_size=16 \
   actor_rollout_ref.rollout.max_model_len=8192 \
   actor_rollout_ref.rollout.checkpoint_engine.update_weights_bucket_megabytes=256 \
   "trainer.default_local_dir=\"$GRPO_ROOT/checkpoints/$EXPERIMENT_NAME\"" \
