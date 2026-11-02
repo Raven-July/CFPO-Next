@@ -26,6 +26,12 @@ val_max_samples: -1
 # The field in the dataset where the prompt is located. Default is 'prompt'.
 prompt_key: prompt
 
+# Optional CFPO system-prompt text file. No injection when null.
+format_prompt: null
+
+# Ground-truth field in dataset/image configured CFPO JSON samples.
+answer_key: answer
+
 # The field used to select the reward function (if using different ones per example).
 reward_fn_key: data_source
 

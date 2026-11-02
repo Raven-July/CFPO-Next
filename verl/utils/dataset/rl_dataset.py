@@ -21,7 +21,10 @@ import os
 import re
 import traceback
 from collections import defaultdict
+from collections.abc import Mapping
+from functools import partial
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Optional
 
 import datasets
@@ -32,6 +35,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizer, ProcessorMixin
 
+from verl.utils.dataset.cfpo import add_system_prompt, normalize_row, read_manifest, resolve_spec
 from verl.utils.import_utils import load_extern_object
 from verl.utils.tokenizer import build_multimodal_processor_inputs, normalize_token_ids
 
@@ -71,7 +75,7 @@ def collate_fn(data_list: list[dict]) -> dict:
 
 class RLHFDataset(Dataset):
     """
-    Load and preprocess RLHF data from Parquet files.
+    Load RLHF files, including CFPO dataset/image JSON manifests.
 
     - Caches files locally.
     - Reads into a HuggingFace Dataset and tokenizes prompts.
@@ -80,7 +84,7 @@ class RLHFDataset(Dataset):
     - Supports resuming from checkpoints.
 
     Args:
-        data_files (str or list): Path(s) to Parquet file(s).
+        data_files (str, dict, or list): Data paths, a CFPO manifest path, or dataset/image entries.
         tokenizer (PreTrainedTokenizer): For the tokenization of text to token IDs.
         config (DictConfig): Options like cache_dir, prompt_key, max_prompt_length, truncation, etc.
         processor (ProcessorMixin, optional): Multimodal preprocessor for images/videos.
@@ -88,7 +92,7 @@ class RLHFDataset(Dataset):
 
     def __init__(
         self,
-        data_files: str | list[str],
+        data_files: str | dict | list[str | dict],
         tokenizer: PreTrainedTokenizer,
         config: DictConfig,
         processor: Optional[ProcessorMixin] = None,
@@ -109,6 +113,11 @@ class RLHFDataset(Dataset):
         self.image_key = config.get("image_key", "images")
         self.video_key = config.get("video_key", "videos")
         self.audio_key = config.get("audio_key", "audios")
+        self.answer_key = config.get("answer_key", "answer")
+        self.format_prompt = None
+        if config.get("format_prompt"):
+            with open(os.path.expanduser(config.get("format_prompt")), encoding="utf-8") as stream:
+                self.format_prompt = stream.read().strip()
         # Default to the processor's real patch_size to align with the rollout path.
         _default_patch_size = getattr(getattr(self.processor, "image_processor", None), "patch_size", 14)
         self.image_patch_size = config.get("image_patch_size") or _default_patch_size
@@ -163,12 +172,29 @@ class RLHFDataset(Dataset):
         from verl.utils.fs import copy_to_local
 
         data_files = self.data_files if not use_origin_parquet else self.original_data_files
-        for i, parquet_file in enumerate(data_files):
-            self.data_files[i] = copy_to_local(src=parquet_file, cache_dir=self.cache_dir, use_shm=self.use_shm)
+        local_files, cfpo_specs = [], []
+        for data_file in data_files:
+            if isinstance(data_file, Mapping):
+                specs = [resolve_spec(data_file, os.getcwd())]
+            else:
+                cached = copy_to_local(src=data_file, cache_dir=self.cache_dir, use_shm=self.use_shm)
+                base_dir = os.path.dirname(os.path.abspath(os.path.expanduser(data_file)))
+                specs = read_manifest(cached, base_dir)
+                if specs is None:
+                    local_files.append(cached)
+                    cfpo_specs.append(None)
+                    continue
+            for spec in specs:
+                local_files.append(
+                    copy_to_local(src=spec["dataset"], cache_dir=self.cache_dir, use_shm=self.use_shm)
+                )
+                cfpo_specs.append(spec)
+        self.data_files = local_files
+        self.cfpo_specs = cfpo_specs
 
     def _read_files_and_tokenize(self):
         dataframes = []
-        for parquet_file in self.data_files:
+        for file_index, parquet_file in enumerate(self.data_files):
             # read files and cache
             if parquet_file.endswith(".parquet"):
                 dataframe = datasets.load_dataset("parquet", data_files=parquet_file)["train"]
@@ -176,6 +202,22 @@ class RLHFDataset(Dataset):
                 dataframe = datasets.load_dataset("json", data_files=parquet_file)["train"]
             else:
                 raise ValueError(f"Unsupported file format: {parquet_file}")
+            specs = getattr(self, "cfpo_specs", None)
+            spec = specs[file_index] if specs else None
+            if spec is not None:
+                dataframe = dataframe.map(
+                    partial(
+                        normalize_row,
+                        image_root=spec["image"],
+                        source=Path(spec["dataset"]).stem,
+                        prompt_key=self.prompt_key,
+                        image_key=self.image_key,
+                        answer_key=self.answer_key,
+                    ),
+                    with_indices=True,
+                    remove_columns=dataframe.column_names,
+                    desc="Converting CFPO problem/image/answer samples",
+                )
             dataframes.append(dataframe)
         self.dataframe: datasets.Dataset = datasets.concatenate_datasets(dataframes)
 
@@ -257,7 +299,10 @@ class RLHFDataset(Dataset):
                         apply_kwargs.pop("return_tensors", None)
 
                         tokenized_prompt = tokenizer.apply_chat_template(
-                            doc[prompt_key], add_generation_prompt=True, tokenize=True, **apply_kwargs
+                            add_system_prompt(doc[prompt_key], getattr(self, "format_prompt", None)),
+                            add_generation_prompt=True,
+                            tokenize=True,
+                            **apply_kwargs,
                         )
                         return len(normalize_token_ids(tokenized_prompt))
                     except Exception:
@@ -310,7 +355,7 @@ class RLHFDataset(Dataset):
         Returns:
             messages: List of messages with replaced placeholder.
         """
-        messages: list = example[key]
+        messages: list = add_system_prompt(example[key], getattr(self, "format_prompt", None))
         # When concatenating multimodal datasets, get will return None for samples without a modality column.
         images = example.get(self.image_key, None) or []
         videos = example.get(self.video_key, None) or []
@@ -552,7 +597,7 @@ class RLHFDataset(Dataset):
             split_dataframe = self.dataframe.select(range(start_idx, end_idx))
 
             split_dataset = RLHFDataset(
-                data_files=self.data_files,
+                data_files=self.original_data_files,
                 tokenizer=self.tokenizer,
                 config=self.config,
                 processor=self.processor,
