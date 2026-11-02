@@ -52,7 +52,7 @@ def read_dataset_specs(value):
     return None
 
 
-def normalize_cfpo_sample(example, index, image_dir=None, prompt_key="prompt", image_key="images"):
+def normalize_cfpo_sample(example, index, image_dir=None, prompt_key="prompt", image_key="images", data_source=None):
     """Translate a problem/answer row into verl's reward and chat schema."""
     problem = example.get("problem")
     if not isinstance(problem, str) or "answer" not in example:
@@ -80,7 +80,7 @@ def normalize_cfpo_sample(example, index, image_dir=None, prompt_key="prompt", i
         prompt_key: [{"role": "user", "content": problem}],
         image_key: resolved,
         "reward_model": {"style": "rule", "ground_truth": str(example["answer"])},
-        "data_source": example.get("data_source") or "cfpo",
+        "data_source": data_source or example.get("data_source") or "cfpo",
         "extra_info": extra_info,
     }
 

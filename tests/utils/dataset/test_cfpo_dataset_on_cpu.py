@@ -79,6 +79,12 @@ def test_single_descriptor_object_file(tmp_path):
     assert ds[0]["reward_model"]["ground_truth"] == "2"
 
 
+def test_descriptor_data_source_labels_benchmarks(tmp_path):
+    path = write_rows(tmp_path)
+    ds = RLHFDataset([{"dataset": str(path), "data_source": "geometry3k"}], Tokenizer(), config())
+    assert ds[0]["data_source"] == "geometry3k"
+
+
 def test_json_lines_with_json_extension_remains_supported(tmp_path):
     row = {"prompt": [{"role": "user", "content": "Hi"}], "data_source": "original"}
     path = tmp_path / "legacy.json"

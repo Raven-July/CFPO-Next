@@ -93,3 +93,107 @@ training/validation generation JSONL and offline SwanLab logs were produced.
 Four-sample validation accuracy was 0.25 and format reward was 0.0. This verifies
 the training pipeline, not full benchmark performance. Inspect generated
 answers and their think/boxed formatting before scaling up.
+
+## Remaining experiment workflow
+
+The repository now includes the cluster wrapper in `cluster.sbatch` (smoke,
+pilot and full modes), preparation and diagnosis tools, and the original
+`Counterfactual-Eval` directory copied byte-for-byte from Raven-July/CFPO commit
+`98ca5a4123be2e85e94855fead46c9a385611136`. Its old shell scripts and hard-coded
+example JSON are reference material; use `evaluate.sbatch` with generated paths.
+These additions have local unit/config checks; only the earlier two-step smoke
+run has been executed on the cluster so far.
+
+After every SSH reconnect, restore the download interpreter before running
+the standard-library tools below:
+
+```bash
+export GRPO_ROOT=/groups/xitucheng213/home/share/u2024213357/GRPO
+source "$GRPO_ROOT/download-env311/bin/activate"
+cd "$GRPO_ROOT/cfpo-next"
+git pull --ff-only
+python examples/cfpo_trainer/inspect_generations.py \
+  "$GRPO_ROOT/generations/cfpo-smoke-220052/validation/2.jsonl"
+python -u examples/cfpo_trainer/prepare_data.py \
+  --raw "$GRPO_ROOT/data/cfpo-raw" --output "$GRPO_ROOT/data/cfpo"
+```
+
+Preparation extracts all downloaded image archives under `cfpo-raw/extracted`,
+including another copy of the two archives already extracted for the smoke
+test. It reuses matching extracted files on subsequent runs and rejects paths
+outside the target directory. It generates full ViRL39K training, the original
+five validation subsets, and all ten reference test subsets. Annotation-relative
+image files must all exist. Validation descriptors carry individual data_source
+labels so metrics are reported per benchmark. The validation subsets sampled
+from test data are for monitoring, not an independent held-out claim.
+
+First run a 20-step pilot at response length 2048 (128 training and 20 Geo3K
+validation rows). The inspected smoke outputs contained the original system
+instruction but omitted think tags and ended mid-answer at the 1024-token cap.
+Keep the original reward/prompt while diagnosing compliance and truncation.
+
+```bash
+RUN_MODE=pilot sbatch --time=02:00:00 examples/cfpo_trainer/cluster.sbatch
+```
+
+Inspect gradients, truncation, format/accuracy metrics and generated answers
+before starting full training. Full mode uses every training/validation row,
+two epochs, batch/mini-batch 16, four completions, and length 2048. It checkpoints
+every 20 steps, keeps three actor checkpoints and validates every 100 steps.
+It is bounded by the Slurm 12-hour limit; completion is not guaranteed in one
+allocation. Keep EXPERIMENT_NAME unchanged when resubmitting to resume the most
+recent saved checkpoint. Never resubmit while the same experiment is running.
+
+```bash
+RUN_MODE=full EXPERIMENT_NAME=qwen3-vl-2b-grpo-full \
+  sbatch examples/cfpo_trainer/cluster.sbatch
+```
+
+Evaluate the initial base model and the final merged actor using identical n=8
+sampling and reference CoT settings. Use separate fresh labels for each run.
+The comparison is within this Instruct experiment; the paper's Thinking-model
+table is context and is not a matched control. Do not label the smoke checkpoint
+as the fully trained baseline.
+
+```bash
+EVAL_MODEL="$GRPO_ROOT/models/Qwen3-VL-2B-Instruct" EVAL_LABEL=base-n8 \
+  sbatch examples/cfpo_trainer/evaluate.sbatch
+
+# Replace NNN with the actual completed training step, after verifying accounting.
+CHECKPOINT_ACTOR="$GRPO_ROOT/checkpoints/qwen3-vl-2b-grpo-full/global_step_NNN/actor" \
+EVAL_MODEL="$GRPO_ROOT/models/qwen3-vl-2b-grpo-full-merged" EVAL_LABEL=trained-n8 \
+  sbatch examples/cfpo_trainer/evaluate.sbatch
+
+python examples/cfpo_trainer/compare_evaluations.py \
+  --config "$GRPO_ROOT/data/cfpo/datasets_eval_full.json" \
+  --base "$GRPO_ROOT/eval-results/base-n8" \
+  --trained "$GRPO_ROOT/eval-results/trained-n8" --n 8
+```
+
+The evaluation wrapper merges FSDP model shards when CHECKPOINT_ACTOR is supplied.
+It checks that every result has as many rows as its annotation file, since the
+original evaluator catches per-dataset errors. Always check Slurm exit status.
+
+## Separate-server dashboard
+
+SwanLab 0.10.3 distinguishes offline sync records from the legacy local dashboard
+database. `offline` records alone must not be claimed as a verified `watch`
+dashboard. Official instructions: https://docs.swanlab.cn/en/guide_cloud/offline-board.html
+
+On the separate 4x4090 host, use an isolated environment with
+`swanlab[dashboard]==0.10.3`. Copy the Slurm output and the replay tool to that
+host using the approved account/file-transfer route (or access the shared path).
+Then run:
+
+```bash
+python replay_dashboard.py /path/to/cfpo-smoke-220052.out \
+  --logdir /path/to/board-logs --name smoke-220052-replayed
+swanlab watch /path/to/board-logs --host 127.0.0.1 --port 5092
+```
+
+The replay is explicitly labelled and contains numeric metrics parsed from the
+Slurm log, not an invented recreation of media/generation artifacts. For new
+native local logs, install dashboard dependencies in the training overlay and
+set `SWANLAB_MODE=local` before submission. The launcher preserves this override.
+Use the existing SSH forwarding route to access port 5092; server/account and
+log-transfer details must be supplied before this can be verified remotely.

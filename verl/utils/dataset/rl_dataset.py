@@ -215,6 +215,7 @@ class RLHFDataset(Dataset):
                         "image_dir": spec.get("image"),
                         "prompt_key": self.prompt_key,
                         "image_key": self.image_key,
+                        "data_source": spec.get("data_source"),
                     },
                     remove_columns=dataframe.column_names,
                 )
