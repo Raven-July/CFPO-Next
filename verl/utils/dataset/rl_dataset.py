@@ -21,6 +21,7 @@ import os
 import re
 import traceback
 from collections import defaultdict
+from collections.abc import Mapping
 from io import BytesIO
 from typing import Any, Optional
 
@@ -32,6 +33,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizer, ProcessorMixin
 
+from verl.utils.dataset.cfpo import normalize_cfpo_sample, read_dataset_specs, with_system_prompt
 from verl.utils.import_utils import load_extern_object
 from verl.utils.tokenizer import build_multimodal_processor_inputs, normalize_token_ids
 
@@ -71,7 +73,7 @@ def collate_fn(data_list: list[dict]) -> dict:
 
 class RLHFDataset(Dataset):
     """
-    Load and preprocess RLHF data from Parquet files.
+    Load RLHF chat data or CFPO annotation/image descriptors.
 
     - Caches files locally.
     - Reads into a HuggingFace Dataset and tokenizes prompts.
@@ -80,7 +82,8 @@ class RLHFDataset(Dataset):
     - Supports resuming from checkpoints.
 
     Args:
-        data_files (str or list): Path(s) to Parquet file(s).
+        data_files (str or list): Parquet/JSON/JSONL paths, CFPO descriptor JSON path,
+            or a list of dictionaries with dataset and optional image paths.
         tokenizer (PreTrainedTokenizer): For the tokenization of text to token IDs.
         config (DictConfig): Options like cache_dir, prompt_key, max_prompt_length, truncation, etc.
         processor (ProcessorMixin, optional): Multimodal preprocessor for images/videos.
@@ -96,6 +99,16 @@ class RLHFDataset(Dataset):
     ):
         if not isinstance(data_files, list | ListConfig):
             data_files = [data_files]
+
+        expanded_files = []
+        for source in data_files:
+            specs = (
+                read_dataset_specs(source)
+                if isinstance(source, Mapping) or (isinstance(source, str) and os.path.isfile(source))
+                else None
+            )
+            expanded_files.extend(specs if specs is not None else [source])
+        data_files = expanded_files
 
         self.data_files = copy.deepcopy(data_files)
         self.original_data_files = copy.deepcopy(data_files)  # use for resume
@@ -119,6 +132,12 @@ class RLHFDataset(Dataset):
         self.filter_overlong_prompts = config.get("filter_overlong_prompts", True)
         self.apply_chat_template_kwargs = config.get("apply_chat_template_kwargs", {})
         self.mm_processor_kwargs = config.get("mm_processor_kwargs", {})
+        self.system_prompt = config.get("system_prompt", None)
+        if config.get("system_prompt_path"):
+            if self.system_prompt:
+                raise ValueError("Set only one of system_prompt and system_prompt_path")
+            with open(os.path.expanduser(config.system_prompt_path), encoding="utf-8") as stream:
+                self.system_prompt = stream.read().strip()
 
         # Mirror AgentLoopWorker's tool loading so length filtering sees the
         # same schemas the rollout will.
@@ -164,11 +183,43 @@ class RLHFDataset(Dataset):
 
         data_files = self.data_files if not use_origin_parquet else self.original_data_files
         for i, parquet_file in enumerate(data_files):
+            if isinstance(parquet_file, Mapping):
+                spec = dict(parquet_file)
+                spec["dataset"] = copy_to_local(
+                    src=os.path.expandvars(os.path.expanduser(spec["dataset"])),
+                    cache_dir=self.cache_dir,
+                    use_shm=self.use_shm,
+                )
+                if spec.get("image"):
+                    spec["image"] = os.path.abspath(os.path.expandvars(os.path.expanduser(spec["image"])))
+                self.data_files[i] = spec
+                continue
             self.data_files[i] = copy_to_local(src=parquet_file, cache_dir=self.cache_dir, use_shm=self.use_shm)
 
     def _read_files_and_tokenize(self):
         dataframes = []
         for parquet_file in self.data_files:
+            if isinstance(parquet_file, Mapping):
+                spec = parquet_file
+                path = spec["dataset"]
+                extension = os.path.splitext(path)[1].lower()
+                if extension not in {".json", ".jsonl", ".parquet"}:
+                    raise ValueError(f"Unsupported CFPO dataset format: {path}")
+                dataframe = datasets.load_dataset(
+                    "parquet" if extension == ".parquet" else "json", data_files=path, split="train"
+                )
+                dataframe = dataframe.map(
+                    normalize_cfpo_sample,
+                    with_indices=True,
+                    fn_kwargs={
+                        "image_dir": spec.get("image"),
+                        "prompt_key": self.prompt_key,
+                        "image_key": self.image_key,
+                    },
+                    remove_columns=dataframe.column_names,
+                )
+                dataframes.append(dataframe)
+                continue
             # read files and cache
             if parquet_file.endswith(".parquet"):
                 dataframe = datasets.load_dataset("parquet", data_files=parquet_file)["train"]
@@ -257,7 +308,10 @@ class RLHFDataset(Dataset):
                         apply_kwargs.pop("return_tensors", None)
 
                         tokenized_prompt = tokenizer.apply_chat_template(
-                            doc[prompt_key], add_generation_prompt=True, tokenize=True, **apply_kwargs
+                            self._build_messages(doc, key=prompt_key),
+                            add_generation_prompt=True,
+                            tokenize=True,
+                            **apply_kwargs,
                         )
                         return len(normalize_token_ids(tokenized_prompt))
                     except Exception:
@@ -310,7 +364,7 @@ class RLHFDataset(Dataset):
         Returns:
             messages: List of messages with replaced placeholder.
         """
-        messages: list = example[key]
+        messages: list = with_system_prompt(example[key], getattr(self, "system_prompt", None))
         # When concatenating multimodal datasets, get will return None for samples without a modality column.
         images = example.get(self.image_key, None) or []
         videos = example.get(self.video_key, None) or []

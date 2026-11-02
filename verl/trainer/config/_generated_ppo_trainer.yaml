@@ -506,6 +506,8 @@ data:
   train_max_samples: -1
   val_max_samples: -1
   prompt_key: prompt
+  system_prompt: null
+  system_prompt_path: null
   reward_fn_key: data_source
   max_prompt_length: 512
   max_response_length: 512
