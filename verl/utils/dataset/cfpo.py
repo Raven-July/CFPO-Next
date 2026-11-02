@@ -30,7 +30,14 @@ def read_dataset_specs(value):
         return [dict(value)]
     if isinstance(value, str) and value.endswith(".json"):
         with open(value, encoding="utf-8") as stream:
-            specs = json.load(stream)
+            try:
+                specs = json.load(stream)
+            except json.JSONDecodeError:
+                # Hugging Face also accepts JSON Lines in files named .json.
+                # Leave their parsing and validation on the existing data path.
+                return None
+        if isinstance(specs, dict) and "dataset" in specs:
+            specs = [specs]
         if isinstance(specs, list) and specs and all(isinstance(item, dict) and "dataset" in item for item in specs):
             base = os.path.dirname(os.path.abspath(value))
             result = []

@@ -71,6 +71,23 @@ def test_inline_omegaconf_descriptor(tmp_path):
     assert ds[0]["raw_prompt"] == [{"role": "user", "content": "What is 1+1?"}]
 
 
+def test_single_descriptor_object_file(tmp_path):
+    write_rows(tmp_path)
+    descriptor = tmp_path / "datasets.json"
+    descriptor.write_text(json.dumps({"dataset": "train.json"}))
+    ds = RLHFDataset(str(descriptor), Tokenizer(), config())
+    assert ds[0]["reward_model"]["ground_truth"] == "2"
+
+
+def test_json_lines_with_json_extension_remains_supported(tmp_path):
+    row = {"prompt": [{"role": "user", "content": "Hi"}], "data_source": "original"}
+    path = tmp_path / "legacy.json"
+    path.write_text(json.dumps(row) + "\n" + json.dumps(row) + "\n")
+    ds = RLHFDataset(str(path), Tokenizer(), config())
+    assert len(ds) == 2
+    assert ds[0]["raw_prompt"] == row["prompt"]
+
+
 @pytest.mark.parametrize("suffix", ["json", "jsonl", "parquet"])
 def test_existing_verl_formats_unchanged(tmp_path, suffix):
     rows = [
