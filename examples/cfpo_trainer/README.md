@@ -1,39 +1,36 @@
-# CFPO-Next data and reward adaptation
+# CFPO-Next: Qwen3-VL GRPO adaptation and bounded validation
 
-This directory adapts the team's existing Counterfactual-R1 data format and
-reward to the current CFPO-Next dataset/reward interfaces. AI assistance was used;
-Bao must review the changes and understand the data flow before submitting the PR.
+Data/reward/system-prompt adaptation, a completed 20-step GRPO run, and a paired
+320-sample evaluation are delivered here. These establish the tested training →
+checkpoint → HF export → inference path. They do not establish convergence or a
+reliable accuracy improvement. This work and its evidence are separate from PR #1.
+AI assistance was used; human review and understanding remain necessary.
 
-## Data flow
+[Requirements review](WEEKLY_REVIEW.md) maps every item in the exported weekly
+task to evidence and gaps, including the Thinking reference table, parameter
+differences, missed supervisor pre-review, untouched reference evaluation, and
+unverified separate offline-board viewing. This is a bounded engineering delivery,
+not a claim that every original-document item has been accepted by the supervisor.
 
-`[{"dataset": "...json", "image": "...directory"}]` can be provided directly as
-`data.train_files` or via a JSON manifest path. Relative entries are resolved
-against the manifest directory; direct entries use the working directory.
-Manifests use both `dataset` and `image` keys (image may be null for text-only data).
-Ordinary sample JSON/JSONL and Parquet files retain the existing loading path.
+## Data and reward interfaces
 
-The confirmed V3-math sample schema is `images`, `problem`, `answer`, `id`, `type`,
-and `is_cf`. `problem` becomes the user message; each `<image>` resolves to the
-corresponding absolute image path. `answer` becomes only
-`reward_model.ground_truth`; `id/type/is_cf` remain in `extra_info`.
-Missing images, answers, and mismatched placeholders fail explicitly.
+`data.train_files` accepts a JSON manifest or direct entries of the form
+`[{"dataset": "...json", "image": "...directory"}]`. Manifest-relative paths use
+the manifest directory; direct paths use the working directory. Multiple sources
+keep their own image roots. Native JSON/JSONL/Parquet loading is preserved.
 
-`data.format_prompt` points to a plain-text system-prompt file. It is added
-before both length filtering and rollout messages. Repeated calls do not mutate
-input messages or add duplicates. A conflicting pre-existing system prompt fails
-instead of silently changing the experiment. Null preserves the original behavior.
+For V3-math fields `images/problem/answer/id/type/is_cf`, the problem and images
+form user messages; the answer enters only `reward_model.ground_truth`, and
+metadata enters `extra_info`. Missing images/answers or placeholder mismatches
+fail explicitly. The 38,870-row source was used to select bounded training
+candidates; 512 is the candidate pool, not verified exposure to all 512 problems.
+It is not a full-training claim.
 
-The example training manifest points to the observed V3-math file (38,870 rows).
-This is an interface-check input; it is not evidence that the team selected this
-dataset revision for final training. No evaluation split is guessed or generated.
-
-## Reward
-
-The reference batch reward was adapted to verl's per-sample signature:
-`compute_score(data_source, solution_str, ground_truth, extra_info, ...)`.
-It returns `score`, `format`, and `accuracy`. The original normalization,
-mathruler grader, formatting regex, and 0.9 accuracy / 0.1 format weights are kept.
-Configure the current framework with:
+`data.format_prompt` injects the team system prompt before length filtering and
+rollout, without mutating input or duplicating it; conflicting prompts fail.
+The reference math grader, normalization and format regex are preserved:
+`score = 0.9 * accuracy + 0.1 * format`. Format requires paired `<think>` tags
+followed by `\boxed{}`. It has not been relaxed to hide zero format scores.
 
 ```text
 data.format_prompt=examples/cfpo_trainer/format_prompt/base.jinja
@@ -41,167 +38,168 @@ reward.custom_reward_function.path=examples/cfpo_trainer/reward_function/base.py
 reward.custom_reward_function.name=compute_score
 ```
 
-These keys were checked against the current source, not the older training script.
+## Tested environment
 
-## Validation and limits
+Transformers is an external `--no-deps` overlay fixed to
+`cc7ab9be508ce6ed3637bba9e50367b29b742dc6` (`5.3.0.dev0`). This is below the
+repository's declared range; compatibility is demonstrated for these runs only.
+The existing SIF provides Python 3.12, torch 2.10.0+cu129 and vLLM 0.18.0.
+SwanLab 0.10.3 is a separate overlay. `PYTHONPATH` is SwanLab → Transformers →
+personal repository, including Ray workers. Hugging Face and SwanLab stay offline.
+No shared SIF or dependency replacement is required.
+
+Training uses `trainer.use_v1=False` (legacy synchronous trainer); this is not a
+claim of V1 trainer support. The Slurm scripts specify partition `g078t`,
+`--gres=gpu:1` and comment `xitucheng213`. The SIF and personal overlay/model paths
+are explicit in the scripts. Login-node host preparation is Python 3.6 compatible;
+the evaluator itself runs under container Python 3.12.
+
+## Observed training
+
+Evidence below is from user-supplied cluster outputs, not a local GPU rerun.
+
+| Job | Scope | Outcome |
+|---|---|---|
+| 220231 | First 32 candidates, 3 steps, 1024 response tokens | COMPLETED 0:0; 6m34s; model/extra saved, no optimizer |
+| 220236 | First 512 candidates, 20 steps, 2048 response tokens | COMPLETED 0:0; 32m07s; model/optimizer/extra/dataloader saved |
+
+Both used one A800 and started from the original Qwen3-VL-2B-Instruct model.
+The 20-step run used 8 CPUs/128 GiB, enabled chunked prefill, and saved every
+10 steps with one retained model checkpoint. Final model and optimizer sizes
+are 9,755,102,283 and 17,020,305,635 bytes. A step-10 dataloader remnant is not a
+second complete checkpoint. Optimizer-state training resume has not been tested;
+step-20 HF export and actual inference have passed separately below.
+
+The 320 training generations cover steps 1–20: mean score 0.23625, accuracy
+component 0.2625, format 0; 194 contain boxed answers and none paired think tags.
+These are mixed-policy training outputs, not held-out accuracy. Real input
+contains the team prompt and both think tokens have `special=False`; prompt
+omission or special-token stripping does not explain the observed missing tags.
+The cause and a remedy remain unresolved.
+
+## Paired sampled evaluation: job 220325
+
+COMPLETED 0:0 in 1h13m16s; `PAIRED_EVALUATION_COMPLETE` and `PAIRED_EVAL_EXIT=0`.
+Both models produced 320 results with complete metadata and matching sample
+hashes/settings. The native FSDP merger exported step20; the exported model then
+completed all 320 inference/grading cases. This verifies HF export/load/inference,
+not optimizer-state resume.
+
+Frozen samples: five benchmarks × 64, seed 42, greedy n=1, max_tokens=2048,
+max_model_len=8192, image area bounds 200704–1003520; identical original tokenizer,
+team prompt and preprocessing on both sides. All 512 training candidates were
+checked for exact ID or identical image bytes; two geometry3k candidates were
+excluded for image-byte overlap. This does not exclude semantic/re-encoded
+duplicates. Answers are used for grading only. Length-stopped cases stay in the
+denominator. This is sampled validation, not full benchmark performance or Avg@8.
+
+| Benchmark | Before correct | After correct | Delta (percentage points) | Length-stop before → after |
+|---|---|---|---|---|
+| geometry3k | 23/64 (35.9375%) | 20/64 (31.2500%) | -4.6875 | 56.2500% → 57.8125% |
+| LogicVista | 16/64 (25.0000%) | 20/64 (31.2500%) | +6.2500 | 57.8125% → 53.1250% |
+| MathVerse | 17/64 (26.5625%) | 18/64 (28.1250%) | +1.5625 | 53.1250% → 42.1875% |
+| C-VQA-Real | 36/64 (56.2500%) | 38/64 (59.3750%) | +3.1250 | 7.8125% → 6.2500% |
+| MARS_Bench | 22/64 (34.3750%) | 21/64 (32.8125%) | -1.5625 | 7.8125% → 9.3750% |
+| All selected samples | 114/320 (35.6250%) | 117/320 (36.5625%) | +0.9375 | 36.5625% → 33.7500% |
+
+Format is 0 on both sides for every benchmark. Three benchmark scores rose and
+two fell; the net difference is only three correct responses. One small fixed
+subset/run does not establish a stable benefit. Substantial length truncation,
+especially on the first three benchmarks, limits conclusions under this cap.
+No new training, cap expansion, model swap or reward relaxation was performed.
+
+[Machine-readable evidence](results/step20-sampled-220325.json) preserves the
+four small reported JSON artifacts and recomputed aggregates, with provenance.
+Raw responses, model weights, datasets and large logs remain on the cluster.
+
+## Reproduction and evidence paths
+
+All commands below are **remote Bash**, supplied for reproduction; they do not
+request additional runs. Existing successful runs should not be resubmitted.
+
+```bash
+cd /groups/xitucheng213/home/share/u2025210309/CFPO-Next
+# Reproduce the bounded 20-step allocation/settings in a NEW directory.
+run=$(mktemp -d /groups/xitucheng213/home/share/u2025210309/grpo-20step-XXXXXX)
+train_job=$(sbatch --parsable --mem=128G --time=02:00:00 --job-name=bao-cfpo-grpo-20step \
+  --output="$run/train.out" --error="$run/train.err" \
+  --export=ALL,CFPO_RUN_DIR="$run",CFPO_TRAIN_ROWS=512,CFPO_TRAIN_STEPS=20,MAX_RESPONSE_LENGTH=2048,CFPO_SAVE_OPTIMIZER=1,SAVE_FREQ=10,ENABLE_CHUNKED_PREFILL=True \
+  examples/cfpo_trainer/train_pilot.sbatch)
+
+# Separate paired evaluation; select the training run/checkpoint explicitly.
+eval_run=$(mktemp -d /groups/xitucheng213/home/share/u2025210309/paired-eval-XXXXXX)
+sbatch --dependency=afterok:"${train_job%%;*}" \
+  --output="$eval_run/eval.out" --error="$eval_run/eval.err" \
+  --export=ALL,CFPO_EVAL_RUN="$eval_run",CFPO_TRAIN_RUN="$run",CFPO_EVAL_STEP=20 \
+  examples/cfpo_trainer/evaluate_pair.sbatch
+```
+
+The evaluation launcher accepts `CFPO_TRAIN_RUN`, `CFPO_EVAL_STEP`,
+`CFPO_BASE_MODEL`, `CFPO_REPO`, `CFPO_TF_OVERLAY`, `CFPO_LOGGING_OVERLAY`,
+`CFPO_DRIVER_LIB` and `CFPO_SIF`; defaults retain the recorded step20 setup.
+These overrides received local shell checks, not a new GPU execution. The original
+job remains identified by its saved source snapshot/evaluator hash.
+
+The training script defaults to 3 steps/32 candidates; `run_grpo.sh` alone defaults
+to config inspection and 128 candidates. Training validation was disabled; its
+Geo3K Parquet argument only satisfied dataset construction, with no reported
+validation score or pilot split-isolation claim. Held-out results come solely
+from the separate audited evaluation.
+
+Under `/groups/xitucheng213/home/share/u2025210309/`:
+
+- Training: `grpo-20step-imD15m/`, including `resolved-config.yaml`,
+  `data-selection.json`, `pilot_samples.json`, `generations/`, and
+  `checkpoints/global_step_20/actor/`.
+- Successful evaluation: `paired-eval-retry-v5RHjX/`, including `comparison.json`,
+  `data-audit.json`, both `meta.*.json`, both `results.*.jsonl`, and `eval.out/err`.
+- Earlier pilot: `grpo-pilot-CLZTsx/` (job 220231).
+- Failed evaluation: `paired-eval-mQSQ72/` (220239, FAILED 1:0, 1m56s): exported
+  successfully but failed on the first before request with unsupported modality
+  `images`; corrected to vLLM's `image`. Retry used identical frozen sample SHA-256
+  `28bca7f621f3ee3c981843d581eb7199278f0ec20ef780b8d26b0dbe599c6ae9`.
+
+The server may retain Git HEAD `4a9dc911` plus offline-delivered modifications.
+Run-local `base-commit.txt`, `tracked-changes.patch`, `changed-source.tar` and
+`submitted.sbatch` identify the executed source; HEAD alone does not. The retry
+script's LF SHA-256 is recorded in the small evidence file. Consolidating the
+PR history did not modify any cluster source, artifacts or job.
+
+## Checks and scope remaining
 
 ```bash
 python examples/cfpo_trainer/test_adapter.py
+python examples/cfpo_trainer/test_evaluate_pair.py
+python examples/cfpo_trainer/test_analyze_pair.py
 ```
 
-This dependency-free test covers labels, path resolution, manifest detection,
-multiple sources, prompt conflicts, and message immutability. Its image fixture
-checks file paths only, not decoding.
+Local checks passed 9/9 adapter tests, 7/7 evaluation contract tests (including a
+mocked infer request that rejects plural modality keys), and 3/3 read-only output
+analysis tests on 2026-11-03. These use synthetic fixtures, not new GPU results.
+`analyze_pair.py --run <existing-eval-directory>` reads the saved pair to diagnose
+answer transitions, format failures and truncation without model loading or
+regrading. Actual CPU diagnostics of the retrieved 320-pair outputs are saved in
+[diagnostic evidence](results/step20-diagnostics-220325.json): 20 wrong→correct,
+17 correct→wrong, 97 correct→correct, 186 wrong→wrong. All 640 texts lack both
+think tags, including natural stops. Every length-stopped output is graded wrong
+(117 before / 108 after); 11 gains change length→stop and 8 losses stop→length,
+while nine gains and nine losses both stop naturally. This association does not
+establish a causal cap effect or a stable reasoning benefit. No new inference,
+regrading or reward relaxation was performed. The original .swanlab archive was
+also fully read locally (4,249 records; finish RUN_STATE_FINISHED), recovering
+118 metric series and 20-step key curves without SDK init or cloud sync.
+Selected summaries/config fields are in the same diagnostic evidence; a local
+static replay page is separate from native SwanLab watch and is not a claim of
+real-time monitoring. Recorded warmup is 0.0 and rollout top_p is 1.0, differing
+from reference 0.05 and 0.99; the requirements review lists these deviations. Job 220202 passed real data,
+image decoding and reward checks. Jobs 220204/220208 passed documented subchecks
+but failed overall (stale module reference/missing SwanLab); both issues were
+addressed, and job 220209 passed isolated offline logging with protected versions
+unchanged. These environment checks are distinct from actual training and scores.
 
-`check_data.py`, launched with `check_data.sbatch`, uses eight real training
-samples to check PIL decoding, actual RLHFDataset loading and resume, direct and
-manifest configs, native JSON/Parquet compatibility, and the real mathruler reward.
-It deliberately skips tokenizer execution and prompt-length filtering and loads
-no model. Passing it does not validate Ray workers, GPU kernels, rollout, or training.
-
-The Transformers overlay is fixed to commit
-`cc7ab9be508ce6ed3637bba9e50367b29b742dc6` (5.3.0.dev0), installed with no dependencies
-outside the SIF. Main-process imports have passed in the existing image, but this
-is below the repository's declared Transformers range. Keep that constraint
-visible until model/worker checks establish the actual supported combination.
-
-GRPO/DAPO training and evaluation results are still pending.
-
-## Recorded validation and training draft
-
-Job 220202 completed with exit code 0:0 in 44 seconds. The observed output included
-`REAL_IMAGE_DECODE_OK`, `MANIFEST_MESSAGES_LABELS_AND_RESUME_OK`,
-`DIRECT_CONFIG_AND_MULTIPLE_SOURCES_OK`, `NATIVE_JSON_AND_PARQUET_REGRESSION_OK`,
-`REAL_MATHRULER_REWARD_CASES_OK`, and `CFPO_DATA_REWARD_CHECK_OK`.
-The recorded base commit is 4a9dc911; adapter changes were uncommitted, so the
-base hash alone does not identify the checked code. Preserve the delivery package
-checksum and worktree diff alongside these logs.
-
-`run_grpo.sh` is now a draft for review. Its default action is `--check-config`,
-which asks Hydra to print the resolved configuration without entering training.
-It uses the existing local Qwen3-VL-2B-Instruct model, the team prompt/reward,
-single-A800 pilot parameters, three steps, and 128 training samples by default.
-This is a pilot configuration, not a complete baseline or a claimed reproduction.
-It explicitly selects the legacy synchronous trainer (`trainer.use_v1=False`)
-to stay close to the previously tested training loop; it does not claim V1 support.
-It uses the container's Python and forwards the overlay/repository paths to Ray;
-it does not invoke uv or synchronize new dependencies.
-
-`--train` requires an explicit `VAL_FILE`. The default Geometry3k path is only a
-known placeholder for config inspection and is not a final evaluation selection.
-The supplied old multi-benchmark validation manifest contains outdated container
-paths and a `COCO_val2014_imagess` typo; no silently corrected evaluation manifest
-is supplied. Resolve dataset versions and train/validation separation before training.
-The draft disables periodic/pre-training validation for the initial pilot.
-SwanLab is offline, and `trainer.rollout_data_dir` saves training generations;
-the old framework's `log_generations` name is not a current config key.
-
-`check_runtime.sbatch` resolves that script's config, exercises two real prompts
-with the local tokenizer/processor and length filter, checks tiny GPU arithmetic,
-checks Ray worker import provenance, and imports selected trainer/backend modules.
-It never loads model weights, starts a vLLM engine, performs rollout, or updates
-parameters. Runtime checks are pending until their output is inspected.
-Submit the training script to the supervisor before actual training.
-
-## Preflight evidence (2026-11-02)
-
-- Job 220204: config resolution, real tokenizer/processor, length filtering on two
-  training samples, A800 arithmetic, and main/Ray-worker import provenance passed.
-  The job ultimately failed because the check referenced the removed module
-  `verl.workers.fsdp_workers`. The checker now uses the actual entry point's
-  `verl.workers.engine_workers`. Do not report 220204 as a fully passing job.
-- Job 220208: engine_workers, FSDP engine, and vLLM async server imports passed.
-  It failed only on the missing SwanLab package; it is not a fully passing job.
-- Job 220209: minimal SwanLab 0.10.3 overlay installed and wrote a real offline log;
-  completed 0:0 in 13 seconds with no stderr. It reused existing compatible
-  dependencies and verified torch/vllm/transformers/tokenizers/huggingface-hub/
-  pydantic/protobuf versions were unchanged.
-
-The run/preflight scripts now prepend the independent logging overlay to
-`PYTHONPATH`, before the Transformers overlay and this repository. Both launcher
-and Ray workers use the same path order. The training shell accepts
-`CFPO_TF_OVERLAY` and `CFPO_LOGGING_OVERLAY` overrides for another user's personal
-installation paths. Logs and checkpoints are stored outside the repository;
-`.gitignore` also excludes SwanLab log directories.
-
-The preflight checks above do not by themselves validate model weights,
-generation, updates, or evaluation. The separate real-training result below
-provides evidence for this specific three-step configuration only.
-
-## Actual three-step training pilot
-
-`train_pilot.sbatch` starts real training on the first 32 V3-math training rows,
-using the existing model, both personal overlays, one A800, eight CPUs, 64 GiB
-host memory, and a 20-minute walltime limit. It runs three optimizer steps and
-saves the final model/extra checkpoint plus generations and offline metrics.
-It records the source JSON hash, selected IDs, resolved config, and actual source
-snapshot. These are training attempts until update/checkpoint evidence is inspected.
-
-Validation is disabled. A known Geo3K Parquet path is supplied only because the
-trainer constructs a validation dataset even when validation is disabled; no
-validation score or train/validation disjointness is claimed for this pilot.
-This exception is limited to the flow pilot. Select and audit the team's intended
-validation manifests before running an evaluated baseline.
-The model/extra-only pilot checkpoint does not include optimizer state and is
-not a full-state resume checkpoint for a longer baseline.
-
-### Observed pilot result: job 220231
-
-User-supplied Slurm accounting reports COMPLETED, exit 0:0, elapsed 6m34s on gpu1.
-The output includes `PILOT_TRAINING_PROCESS_OK` and `PILOT_EXIT=0`.
-Training steps 1/2/3 logged losses 0.06029538, -0.06679699, 0.00814930 and gradient
-norms 1.02691317, 1.72622943, 6.59431410, with learning rate 1e-6 throughout.
-Generation files 1.jsonl, 2.jsonl and 3.jsonl were reported written. The checkpoint
-directory `grpo-pilot-CLZTsx/checkpoints/global_step_3` was logged; checkpoint
-listing supplied by the user confirms 10 nonempty files, including
-`actor/model_world_size_1_rank_0.pt` (9,755,102,283 bytes), actor extra state,
-HF config/tokenizer files, and dataloader state. No optimizer file is present,
-consistent with the pilot's model/extra-only save setting. This confirms file
-existence and nonzero size; checkpoint reload has not been tested.
-
-This is evidence of actual updates on the current CFPO-Next implementation with
-the specified Transformers development overlay, not the older official-verl run.
-It does not establish convergence, a complete baseline, improved accuracy, or
-general compatibility with all current dependency combinations. No validation was run.
-Reported mean rewards are training rewards, not held-out accuracy.
-
-Response clipping ratios were 0.125, 0.1875 and 0.0 under the 1024-token limit.
-The user's inspection of all 48 saved responses found 41 boxed answers, zero
-paired think tags, and zero matches to the original formatting reward regex.
-Inspect the actual input prompt and token special flags before attributing this
-to model behavior or changing experiment settings. Do not relax the reference
-reward to hide the zero formatting score. vLLM also
-warned that this model does not officially support disabling chunked prefill;
-the next training configuration should address that warning. Optional-engine,
-deprecation and repeated SwanLab finish warnings were retained in the raw logs.
-
-The supplied generation input contains the complete team system prompt. The
-original tokenizer's added-token entries mark both `<think>` and `</think>` as
-`special: false`. The saved outputs' missing tags therefore are not explained by
-their removal as special tokens. Keep the zero-format result as observed behavior;
-no prompt/reward relaxation or model replacement is applied.
-
-## 20-step stability run
-
-The launcher now supports `CFPO_TRAIN_ROWS`, `CFPO_TRAIN_STEPS`,
-`MAX_RESPONSE_LENGTH`, `CFPO_CHECKPOINT_CONTENTS`, and `SAVE_FREQ` overrides.
-`CFPO_SAVE_OPTIMIZER=1` selects model/optimizer/extra saving without passing a
-comma-containing JSON value through Slurm's `--export` parser.
-The next run selects 512 training rows, executes 20 steps, uses a 2048-token
-response limit, enables chunked prefill, and saves model/optimizer/extra state.
-SwanLab remains offline. It starts from the same fixed original model revision;
-the preceding model/extra-only checkpoint is not used as a full-state resume.
-Validation stays disabled and no validation score is claimed.
-
-The intended allocation is one A800, eight CPUs, 128 GiB host memory, and a
-two-hour walltime limit. Checkpoints are saved every ten steps with one retained
-checkpoint; transient disk use can include the previous checkpoint during saving.
-This is a stability/output-quality run, not an experiment isolating the effect
-of the changed response limit or a complete evaluated baseline.
-
-User-supplied Slurm accounting confirms job 220236 COMPLETED, exit 0:0,
-elapsed 32m07s. The progress log reaches 20/20, with the progress-bar interval
-covering 27m24s. Results are under `grpo-20step-imD15m`. These durations measure
-different scopes; do not present progress-bar time as the complete job duration.
-Checkpoint optimizer-file existence, final metric values, generation quality,
-and checkpoint reload are pending inspection. No held-out evaluation was run.
+The requested adaptation, examples scripts, personal-branch PR and bounded real
+GRPO loop have execution evidence. DAPO remains optional and unrun. No full-training
+step count, convergence target or minimum runtime was confirmed. Format compliance,
+length truncation and reliable generalization remain unresolved; they do not turn
+optional large experiments into requirements. Bao's independent understanding of
+the loop is not established by successful AI-assisted execution alone.

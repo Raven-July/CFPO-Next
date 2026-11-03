@@ -1,0 +1,438 @@
+{
+  "provenance": "CPU-only analysis of existing job 220325 per-response outputs retrieved by Bao. Accuracy grades retained; format regex checked, no inference or reward modification.",
+  "run_job": 220325,
+  "samples_sha256": "28bca7f621f3ee3c981843d581eb7199278f0ec20ef780b8d26b0dbe599c6ae9",
+  "source_file_sha256": {
+    "data-audit.json": "e43ba171c1a3b3a0104fff3cb86be55f4e6c67fae3d5270be0011e6e759638bc",
+    "meta.after.json": "9db956fbddf7f2daa05fe53584b67210bfd7862d11566a593a84381dcc74558b",
+    "meta.before.json": "d186e02a9545242eb6cf8010e56f8a70f4e48517c74e092b3300d9a45f1aa938",
+    "results.after.jsonl": "a9a3cba1fa9d2b5ec0b3dbf3f679138f61154dc7213e74f01a1410e8f4677bef",
+    "results.before.jsonl": "a05348f521150703dcc7864c56b12d6768ee2b60ce28155b73de4f34153ea6b8",
+    "samples.json": "28bca7f621f3ee3c981843d581eb7199278f0ec20ef780b8d26b0dbe599c6ae9"
+  },
+  "groups": {
+    "ALL": {
+      "n": 320,
+      "transitions": {
+        "correct_to_wrong": 17,
+        "correct_to_correct": 97,
+        "wrong_to_wrong": 186,
+        "wrong_to_correct": 20
+      },
+      "transitions_by_finish_reason": {
+        "correct_to_wrong/stop_to_length": 8,
+        "correct_to_correct/stop_to_stop": 97,
+        "correct_to_wrong/stop_to_stop": 9,
+        "wrong_to_wrong/stop_to_stop": 75,
+        "wrong_to_correct/length_to_stop": 11,
+        "wrong_to_correct/stop_to_stop": 9,
+        "wrong_to_wrong/length_to_length": 95,
+        "wrong_to_wrong/length_to_stop": 11,
+        "wrong_to_wrong/stop_to_length": 5
+      },
+      "before": {
+        "neither_tag": 320,
+        "boxed_marker": 194,
+        "reference_format_match": 0,
+        "correct": 114,
+        "output_tokens_total": 296074,
+        "mean_output_tokens": 925.23125,
+        "by_finish_reason": {
+          "stop": {
+            "n": 203,
+            "correct": 114
+          },
+          "length": {
+            "n": 117,
+            "correct": 0
+          }
+        }
+      },
+      "after": {
+        "neither_tag": 320,
+        "boxed_marker": 209,
+        "reference_format_match": 0,
+        "correct": 117,
+        "output_tokens_total": 281805,
+        "mean_output_tokens": 880.640625,
+        "by_finish_reason": {
+          "stop": {
+            "n": 212,
+            "correct": 117
+          },
+          "length": {
+            "n": 108,
+            "correct": 0
+          }
+        }
+      }
+    },
+    "C-VQA-Real": {
+      "n": 64,
+      "transitions": {
+        "correct_to_wrong": 6,
+        "correct_to_correct": 30,
+        "wrong_to_wrong": 20,
+        "wrong_to_correct": 8
+      },
+      "transitions_by_finish_reason": {
+        "correct_to_wrong/stop_to_length": 2,
+        "correct_to_correct/stop_to_stop": 30,
+        "correct_to_wrong/stop_to_stop": 4,
+        "wrong_to_wrong/stop_to_stop": 16,
+        "wrong_to_correct/length_to_stop": 2,
+        "wrong_to_correct/stop_to_stop": 6,
+        "wrong_to_wrong/length_to_length": 1,
+        "wrong_to_wrong/length_to_stop": 2,
+        "wrong_to_wrong/stop_to_length": 1
+      },
+      "before": {
+        "neither_tag": 64,
+        "boxed_marker": 54,
+        "reference_format_match": 0,
+        "correct": 36,
+        "output_tokens_total": 20793,
+        "mean_output_tokens": 324.890625,
+        "by_finish_reason": {
+          "stop": {
+            "n": 59,
+            "correct": 36
+          },
+          "length": {
+            "n": 5,
+            "correct": 0
+          }
+        }
+      },
+      "after": {
+        "neither_tag": 64,
+        "boxed_marker": 60,
+        "reference_format_match": 0,
+        "correct": 38,
+        "output_tokens_total": 19066,
+        "mean_output_tokens": 297.90625,
+        "by_finish_reason": {
+          "stop": {
+            "n": 60,
+            "correct": 38
+          },
+          "length": {
+            "n": 4,
+            "correct": 0
+          }
+        }
+      }
+    },
+    "LogicVista": {
+      "n": 64,
+      "transitions": {
+        "wrong_to_correct": 5,
+        "wrong_to_wrong": 43,
+        "correct_to_correct": 15,
+        "correct_to_wrong": 1
+      },
+      "transitions_by_finish_reason": {
+        "wrong_to_correct/length_to_stop": 5,
+        "wrong_to_wrong/length_to_length": 31,
+        "correct_to_correct/stop_to_stop": 15,
+        "wrong_to_wrong/stop_to_stop": 9,
+        "correct_to_wrong/stop_to_length": 1,
+        "wrong_to_wrong/stop_to_length": 2,
+        "wrong_to_wrong/length_to_stop": 1
+      },
+      "before": {
+        "neither_tag": 64,
+        "boxed_marker": 27,
+        "reference_format_match": 0,
+        "correct": 16,
+        "output_tokens_total": 87366,
+        "mean_output_tokens": 1365.09375,
+        "by_finish_reason": {
+          "stop": {
+            "n": 27,
+            "correct": 16
+          },
+          "length": {
+            "n": 37,
+            "correct": 0
+          }
+        }
+      },
+      "after": {
+        "neither_tag": 64,
+        "boxed_marker": 29,
+        "reference_format_match": 0,
+        "correct": 20,
+        "output_tokens_total": 80666,
+        "mean_output_tokens": 1260.40625,
+        "by_finish_reason": {
+          "stop": {
+            "n": 30,
+            "correct": 20
+          },
+          "length": {
+            "n": 34,
+            "correct": 0
+          }
+        }
+      }
+    },
+    "MARS_Bench": {
+      "n": 64,
+      "transitions": {
+        "wrong_to_wrong": 39,
+        "correct_to_correct": 18,
+        "correct_to_wrong": 4,
+        "wrong_to_correct": 3
+      },
+      "transitions_by_finish_reason": {
+        "wrong_to_wrong/stop_to_stop": 33,
+        "correct_to_correct/stop_to_stop": 18,
+        "wrong_to_wrong/length_to_length": 4,
+        "wrong_to_wrong/stop_to_length": 1,
+        "wrong_to_wrong/length_to_stop": 1,
+        "correct_to_wrong/stop_to_length": 1,
+        "correct_to_wrong/stop_to_stop": 3,
+        "wrong_to_correct/stop_to_stop": 3
+      },
+      "before": {
+        "neither_tag": 64,
+        "boxed_marker": 55,
+        "reference_format_match": 0,
+        "correct": 22,
+        "output_tokens_total": 22447,
+        "mean_output_tokens": 350.734375,
+        "by_finish_reason": {
+          "stop": {
+            "n": 59,
+            "correct": 22
+          },
+          "length": {
+            "n": 5,
+            "correct": 0
+          }
+        }
+      },
+      "after": {
+        "neither_tag": 64,
+        "boxed_marker": 56,
+        "reference_format_match": 0,
+        "correct": 21,
+        "output_tokens_total": 24544,
+        "mean_output_tokens": 383.5,
+        "by_finish_reason": {
+          "stop": {
+            "n": 58,
+            "correct": 21
+          },
+          "length": {
+            "n": 6,
+            "correct": 0
+          }
+        }
+      }
+    },
+    "MathVerse": {
+      "n": 64,
+      "transitions": {
+        "wrong_to_wrong": 43,
+        "correct_to_correct": 14,
+        "correct_to_wrong": 3,
+        "wrong_to_correct": 4
+      },
+      "transitions_by_finish_reason": {
+        "wrong_to_wrong/length_to_length": 25,
+        "correct_to_correct/stop_to_stop": 14,
+        "wrong_to_wrong/stop_to_stop": 13,
+        "correct_to_wrong/stop_to_stop": 1,
+        "wrong_to_correct/length_to_stop": 4,
+        "wrong_to_wrong/length_to_stop": 5,
+        "correct_to_wrong/stop_to_length": 2
+      },
+      "before": {
+        "neither_tag": 64,
+        "boxed_marker": 30,
+        "reference_format_match": 0,
+        "correct": 17,
+        "output_tokens_total": 80417,
+        "mean_output_tokens": 1256.515625,
+        "by_finish_reason": {
+          "stop": {
+            "n": 30,
+            "correct": 17
+          },
+          "length": {
+            "n": 34,
+            "correct": 0
+          }
+        }
+      },
+      "after": {
+        "neither_tag": 64,
+        "boxed_marker": 37,
+        "reference_format_match": 0,
+        "correct": 18,
+        "output_tokens_total": 72200,
+        "mean_output_tokens": 1128.125,
+        "by_finish_reason": {
+          "stop": {
+            "n": 37,
+            "correct": 18
+          },
+          "length": {
+            "n": 27,
+            "correct": 0
+          }
+        }
+      }
+    },
+    "geometry3k": {
+      "n": 64,
+      "transitions": {
+        "correct_to_correct": 20,
+        "correct_to_wrong": 3,
+        "wrong_to_wrong": 41
+      },
+      "transitions_by_finish_reason": {
+        "correct_to_correct/stop_to_stop": 20,
+        "correct_to_wrong/stop_to_length": 2,
+        "wrong_to_wrong/length_to_stop": 2,
+        "wrong_to_wrong/stop_to_stop": 4,
+        "wrong_to_wrong/length_to_length": 34,
+        "correct_to_wrong/stop_to_stop": 1,
+        "wrong_to_wrong/stop_to_length": 1
+      },
+      "before": {
+        "neither_tag": 64,
+        "boxed_marker": 28,
+        "reference_format_match": 0,
+        "correct": 23,
+        "output_tokens_total": 85051,
+        "mean_output_tokens": 1328.921875,
+        "by_finish_reason": {
+          "stop": {
+            "n": 28,
+            "correct": 23
+          },
+          "length": {
+            "n": 36,
+            "correct": 0
+          }
+        }
+      },
+      "after": {
+        "neither_tag": 64,
+        "boxed_marker": 27,
+        "reference_format_match": 0,
+        "correct": 20,
+        "output_tokens_total": 85329,
+        "mean_output_tokens": 1333.265625,
+        "by_finish_reason": {
+          "stop": {
+            "n": 27,
+            "correct": 20
+          },
+          "length": {
+            "n": 37,
+            "correct": 0
+          }
+        }
+      }
+    }
+  },
+  "reported_model_template_check": {
+    "source": "Bao supplied a read-only inspection of the original model files on bupt-cluster on 2026-11-03; template files themselves were not downloaded.",
+    "files": [
+      "chat_template.json",
+      "tokenizer_config.json"
+    ],
+    "add_generation_prompt_suffix": "<|im_start|>assistant\n",
+    "think_tag_prefill_observed": false,
+    "interpretation": "Missing opening think tags in outputs are not explained by a think prefill in the reported generation template. Does not establish why the model fails to emit the required tags."
+  },
+  "training_archive_review": {
+    "job": 220236,
+    "source_archive_bytes": 358950,
+    "source_archive_sha256": "5900f922eeaa94830c995ace03ec0b208cbd70104aaa9f1fec0febf79e1a1b84",
+    "sdk_wheel_sha256": "f9d5908e304fc03f5b90397e3284612f71794c2c5451a5aace43461937a46918",
+    "reader": "Official SwanLab 0.10.3 DataStoreReader.scan and generated protobuf only; no SDK init/sync",
+    "record_counts": {
+      "start": 1,
+      "save": 4,
+      "log": 55,
+      "column": 118,
+      "scalar": 4070,
+      "finish": 1
+    },
+    "finish_states": [
+      "RUN_STATE_FINISHED"
+    ],
+    "metric_series": 118,
+    "all_scalar_values_finite": true,
+    "scope": "Training metrics only; archive and generated local replay page remain outside Git; no native SwanLab watch session claimed.",
+    "selected_training_metrics": {
+      "critic/rewards/mean": {
+        "steps": 20,
+        "first": 0.5062499642372131,
+        "last": 0.39374998211860657,
+        "mean": 0.2362499926239252,
+        "min": 0.05624999850988388,
+        "max": 0.5062499642372131
+      },
+      "actor/pg_loss": {
+        "steps": 20,
+        "first": 0.2686595041304827,
+        "last": 0.1103263758122921,
+        "mean": 0.07798635037615895,
+        "min": -0.012009206227958202,
+        "max": 0.2686595041304827
+      },
+      "actor/grad_norm": {
+        "steps": 20,
+        "first": 1.0435746908187866,
+        "last": 1.586901307106018,
+        "mean": 0.7928864788729697,
+        "min": 0.0029460215009748936,
+        "max": 2.5687708854675293
+      },
+      "actor/lr": {
+        "steps": 20,
+        "first": 1e-06,
+        "last": 1e-06,
+        "mean": 1e-06,
+        "min": 1e-06,
+        "max": 1e-06
+      },
+      "response_length/mean": {
+        "steps": 20,
+        "first": 1230.0625,
+        "last": 720.9375,
+        "mean": 1039.80625,
+        "min": 332.5,
+        "max": 1595.4375
+      },
+      "response_length/clip_ratio": {
+        "steps": 20,
+        "first": 0.375,
+        "last": 0.125,
+        "mean": 0.3625,
+        "min": 0.0,
+        "max": 0.75
+      }
+    },
+    "verified_configuration": {
+      "lr": 1e-06,
+      "lr_warmup_steps_ratio": 0.0,
+      "optimizer": "AdamW",
+      "optimizer_impl": "torch.optim",
+      "rollout_n": 4,
+      "rollout_temperature": 1.0,
+      "rollout_top_p": 1,
+      "rollout_max_model_len": 4096,
+      "data_seed": 42,
+      "data_mm_processor_kwargs": {},
+      "data_max_prompt_length": 2048,
+      "data_max_response_length": 2048
+    }
+  }
+}
