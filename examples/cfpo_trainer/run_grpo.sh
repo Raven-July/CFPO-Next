@@ -23,6 +23,9 @@ if [ "$mode" = --train ]; then
     : "${VAL_FILE:?Set the reviewed, disjoint validation file/manifest before training}"
 fi
 val_file=${VAL_FILE:-$work/data/geo3k/test.parquet}
+checkpoint_contents=${CHECKPOINT_SAVE_CONTENTS:-'["model","extra"]'}
+max_response_length=${MAX_RESPONSE_LENGTH:-1024}
+max_model_len=$((2048 + max_response_length))
 cd "$repo"
 if [ "$mode" = --check-config ]; then
     set -- --cfg job --resolve "$@"
@@ -37,7 +40,7 @@ exec python3 -u -m verl.trainer.main_ppo \
     data.train_max_samples="${TRAIN_MAX_SAMPLES:-128}" \
     data.val_max_samples=16 \
     data.max_prompt_length=2048 \
-    data.max_response_length=1024 \
+    data.max_response_length="$max_response_length" \
     data.filter_overlong_prompts=True \
     data.filter_overlong_prompts_workers=1 \
     data.dataloader_num_workers=0 \
@@ -56,17 +59,17 @@ exec python3 -u -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.kl_loss_coef=0.01 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
     actor_rollout_ref.actor.entropy_coeff=0 \
-    'actor_rollout_ref.actor.checkpoint.save_contents=["model","extra"]' \
+    actor_rollout_ref.actor.checkpoint.save_contents="$checkpoint_contents" \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.mode=async \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.dtype=bfloat16 \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.35 \
-    actor_rollout_ref.rollout.max_model_len=4096 \
-    actor_rollout_ref.rollout.max_num_batched_tokens=4096 \
+    actor_rollout_ref.rollout.max_model_len="$max_model_len" \
+    actor_rollout_ref.rollout.max_num_batched_tokens="$max_model_len" \
     actor_rollout_ref.rollout.max_num_seqs=8 \
     actor_rollout_ref.rollout.enforce_eager=True \
-    actor_rollout_ref.rollout.enable_chunked_prefill=False \
+    actor_rollout_ref.rollout.enable_chunked_prefill="${ENABLE_CHUNKED_PREFILL:-True}" \
     actor_rollout_ref.rollout.free_cache_engine=True \
     actor_rollout_ref.rollout.n=4 \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=1 \
@@ -82,7 +85,7 @@ exec python3 -u -m verl.trainer.main_ppo \
     trainer.n_gpus_per_node=1 trainer.nnodes=1 \
     trainer.total_epochs=1 trainer.total_training_steps="${TOTAL_STEPS:-3}" \
     trainer.val_before_train=False trainer.test_freq=-1 \
-    trainer.save_freq="${TOTAL_STEPS:-3}" trainer.max_actor_ckpt_to_keep=1 \
+    trainer.save_freq="${SAVE_FREQ:-${TOTAL_STEPS:-3}}" trainer.max_actor_ckpt_to_keep=1 \
     trainer.resume_mode=disable \
     trainer.default_local_dir="$CFPO_RUN_DIR/checkpoints" \
     trainer.rollout_data_dir="$CFPO_RUN_DIR/generations" \

@@ -124,7 +124,84 @@ and Ray workers use the same path order. The training shell accepts
 installation paths. Logs and checkpoints are stored outside the repository;
 `.gitignore` also excludes SwanLab log directories.
 
-No model weights, generation engine, parameter update, or full evaluation has
-been validated in this CFPO-Next checkout. Training and model-runtime compatibility
-remain pending. These results are separate partial checks, not one successful
-end-to-end training run.
+The preflight checks above do not by themselves validate model weights,
+generation, updates, or evaluation. The separate real-training result below
+provides evidence for this specific three-step configuration only.
+
+## Actual three-step training pilot
+
+`train_pilot.sbatch` starts real training on the first 32 V3-math training rows,
+using the existing model, both personal overlays, one A800, eight CPUs, 64 GiB
+host memory, and a 20-minute walltime limit. It runs three optimizer steps and
+saves the final model/extra checkpoint plus generations and offline metrics.
+It records the source JSON hash, selected IDs, resolved config, and actual source
+snapshot. These are training attempts until update/checkpoint evidence is inspected.
+
+Validation is disabled. A known Geo3K Parquet path is supplied only because the
+trainer constructs a validation dataset even when validation is disabled; no
+validation score or train/validation disjointness is claimed for this pilot.
+This exception is limited to the flow pilot. Select and audit the team's intended
+validation manifests before running an evaluated baseline.
+The model/extra-only pilot checkpoint does not include optimizer state and is
+not a full-state resume checkpoint for a longer baseline.
+
+### Observed pilot result: job 220231
+
+User-supplied Slurm accounting reports COMPLETED, exit 0:0, elapsed 6m34s on gpu1.
+The output includes `PILOT_TRAINING_PROCESS_OK` and `PILOT_EXIT=0`.
+Training steps 1/2/3 logged losses 0.06029538, -0.06679699, 0.00814930 and gradient
+norms 1.02691317, 1.72622943, 6.59431410, with learning rate 1e-6 throughout.
+Generation files 1.jsonl, 2.jsonl and 3.jsonl were reported written. The checkpoint
+directory `grpo-pilot-CLZTsx/checkpoints/global_step_3` was logged; checkpoint
+listing supplied by the user confirms 10 nonempty files, including
+`actor/model_world_size_1_rank_0.pt` (9,755,102,283 bytes), actor extra state,
+HF config/tokenizer files, and dataloader state. No optimizer file is present,
+consistent with the pilot's model/extra-only save setting. This confirms file
+existence and nonzero size; checkpoint reload has not been tested.
+
+This is evidence of actual updates on the current CFPO-Next implementation with
+the specified Transformers development overlay, not the older official-verl run.
+It does not establish convergence, a complete baseline, improved accuracy, or
+general compatibility with all current dependency combinations. No validation was run.
+Reported mean rewards are training rewards, not held-out accuracy.
+
+Response clipping ratios were 0.125, 0.1875 and 0.0 under the 1024-token limit.
+The user's inspection of all 48 saved responses found 41 boxed answers, zero
+paired think tags, and zero matches to the original formatting reward regex.
+Inspect the actual input prompt and token special flags before attributing this
+to model behavior or changing experiment settings. Do not relax the reference
+reward to hide the zero formatting score. vLLM also
+warned that this model does not officially support disabling chunked prefill;
+the next training configuration should address that warning. Optional-engine,
+deprecation and repeated SwanLab finish warnings were retained in the raw logs.
+
+The supplied generation input contains the complete team system prompt. The
+original tokenizer's added-token entries mark both `<think>` and `</think>` as
+`special: false`. The saved outputs' missing tags therefore are not explained by
+their removal as special tokens. Keep the zero-format result as observed behavior;
+no prompt/reward relaxation or model replacement is applied.
+
+## 20-step stability run
+
+The launcher now supports `CFPO_TRAIN_ROWS`, `CFPO_TRAIN_STEPS`,
+`MAX_RESPONSE_LENGTH`, `CFPO_CHECKPOINT_CONTENTS`, and `SAVE_FREQ` overrides.
+`CFPO_SAVE_OPTIMIZER=1` selects model/optimizer/extra saving without passing a
+comma-containing JSON value through Slurm's `--export` parser.
+The next run selects 512 training rows, executes 20 steps, uses a 2048-token
+response limit, enables chunked prefill, and saves model/optimizer/extra state.
+SwanLab remains offline. It starts from the same fixed original model revision;
+the preceding model/extra-only checkpoint is not used as a full-state resume.
+Validation stays disabled and no validation score is claimed.
+
+The intended allocation is one A800, eight CPUs, 128 GiB host memory, and a
+two-hour walltime limit. Checkpoints are saved every ten steps with one retained
+checkpoint; transient disk use can include the previous checkpoint during saving.
+This is a stability/output-quality run, not an experiment isolating the effect
+of the changed response limit or a complete evaluated baseline.
+
+User-supplied Slurm accounting confirms job 220236 COMPLETED, exit 0:0,
+elapsed 32m07s. The progress log reaches 20/20, with the progress-bar interval
+covering 27m24s. Results are under `grpo-20step-imD15m`. These durations measure
+different scopes; do not present progress-bar time as the complete job duration.
+Checkpoint optimizer-file existence, final metric values, generation quality,
+and checkpoint reload are pending inspection. No held-out evaluation was run.
