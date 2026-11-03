@@ -1,0 +1,236 @@
+{
+  "provenance": "Transcribed JSON artifacts and completion/accounting output supplied by Bao on 2026-11-03; raw per-response files remain on cluster. Not an independent local rerun.",
+  "job": {
+    "id": 220325,
+    "state": "COMPLETED",
+    "exit_code": "0:0",
+    "elapsed": "01:13:16",
+    "run_directory": "/groups/xitucheng213/home/share/u2025210309/paired-eval-retry-v5RHjX",
+    "completion_marker": "PAIRED_EVALUATION_COMPLETE",
+    "reported_result_lines": {
+      "before": 320,
+      "after": 320
+    },
+    "evaluator_lf_sha256": "ec5a16de1002251ce1cf52aba36a7895f71963d34c598a123b60825bbf1ae471"
+  },
+  "aggregate_recomputed_from_comparison": {
+    "before": {
+      "n": 320,
+      "correct": 114,
+      "accuracy": 0.35625,
+      "format": 0.0,
+      "length_stopped": 117,
+      "length_stop": 0.365625
+    },
+    "after": {
+      "n": 320,
+      "correct": 117,
+      "accuracy": 0.365625,
+      "format": 0.0,
+      "length_stopped": 108,
+      "length_stop": 0.3375
+    }
+  },
+  "artifacts": {
+    "comparison.json": {
+      "scope": "sampled validation, greedy n=1; not paper Avg@8 or a complete benchmark",
+      "samples_sha256": "28bca7f621f3ee3c981843d581eb7199278f0ec20ef780b8d26b0dbe599c6ae9",
+      "settings": {
+        "n": 1,
+        "temperature": 0.0,
+        "top_p": 1.0,
+        "seed": 42,
+        "max_tokens": 2048,
+        "max_model_len": 8192,
+        "batch_size": 4,
+        "min_pixels": 200704,
+        "max_pixels": 1003520,
+        "skip_special_tokens": true,
+        "tokenizer": "/groups/g900319/home/share/u2025210309/grpo-qwen3vl2b/models/Qwen3-VL-2B-Instruct",
+        "prompt_sha256": "0bf0accf7f9947a41ec92fe73c6f15a23c1f6f8fb631f2086d8c4de7542961ed"
+      },
+      "results": [
+        {
+          "benchmark": "geometry3k",
+          "before": {
+            "n": 64,
+            "accuracy": 0.359375,
+            "format": 0.0,
+            "length_stop": 0.5625
+          },
+          "after": {
+            "n": 64,
+            "accuracy": 0.3125,
+            "format": 0.0,
+            "length_stop": 0.578125
+          },
+          "accuracy_delta_points": -4.6875
+        },
+        {
+          "benchmark": "LogicVista",
+          "before": {
+            "n": 64,
+            "accuracy": 0.25,
+            "format": 0.0,
+            "length_stop": 0.578125
+          },
+          "after": {
+            "n": 64,
+            "accuracy": 0.3125,
+            "format": 0.0,
+            "length_stop": 0.53125
+          },
+          "accuracy_delta_points": 6.25
+        },
+        {
+          "benchmark": "MathVerse",
+          "before": {
+            "n": 64,
+            "accuracy": 0.265625,
+            "format": 0.0,
+            "length_stop": 0.53125
+          },
+          "after": {
+            "n": 64,
+            "accuracy": 0.28125,
+            "format": 0.0,
+            "length_stop": 0.421875
+          },
+          "accuracy_delta_points": 1.5625
+        },
+        {
+          "benchmark": "C-VQA-Real",
+          "before": {
+            "n": 64,
+            "accuracy": 0.5625,
+            "format": 0.0,
+            "length_stop": 0.078125
+          },
+          "after": {
+            "n": 64,
+            "accuracy": 0.59375,
+            "format": 0.0,
+            "length_stop": 0.0625
+          },
+          "accuracy_delta_points": 3.125
+        },
+        {
+          "benchmark": "MARS_Bench",
+          "before": {
+            "n": 64,
+            "accuracy": 0.34375,
+            "format": 0.0,
+            "length_stop": 0.078125
+          },
+          "after": {
+            "n": 64,
+            "accuracy": 0.328125,
+            "format": 0.0,
+            "length_stop": 0.09375
+          },
+          "accuracy_delta_points": -1.5625
+        }
+      ]
+    },
+    "data-audit.json": {
+      "train_file": "/groups/xitucheng213/home/share/u2025210309/grpo-20step-imD15m/pilot_samples.json",
+      "train_file_sha256": "8a037ded95514329009e65224f0e0c89f1e8d00f00b4f5b13b94a4fa3ec8fd8d",
+      "train_candidate_count": 512,
+      "seed": 42,
+      "samples_sha256": "28bca7f621f3ee3c981843d581eb7199278f0ec20ef780b8d26b0dbe599c6ae9",
+      "benchmarks": [
+        {
+          "benchmark": "geometry3k",
+          "annotation": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/geometry3k_val_V3.json",
+          "source_sha256": "0f32c1ced59280143994fa09be94c3cd626c79d1cf69bcda21b1c472e3318cfd",
+          "source_count": 600,
+          "scanned": 66,
+          "selected": 64,
+          "rejections_among_scanned": {
+            "shared_image_bytes": 2
+          }
+        },
+        {
+          "benchmark": "LogicVista",
+          "annotation": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/LogicVista_val_V3.json",
+          "source_sha256": "d8af6a6102855b4cd3914d3197652623c6961ef827060b6d8a7e73c121035cb9",
+          "source_count": 448,
+          "scanned": 64,
+          "selected": 64,
+          "rejections_among_scanned": {}
+        },
+        {
+          "benchmark": "MathVerse",
+          "annotation": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/MathVerse_val_V3.json",
+          "source_sha256": "70e2e719384a252f5a1c27e6ddcca9017576fa44e842789ebd9584d74d83b4e4",
+          "source_count": 600,
+          "scanned": 64,
+          "selected": 64,
+          "rejections_among_scanned": {}
+        },
+        {
+          "benchmark": "C-VQA-Real",
+          "annotation": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3/C-VQA-Real_val_V3.json",
+          "source_sha256": "00d45a5048bebf5e8626b005730bdee21e809f70b46f338a44538462bac2247c",
+          "source_count": 600,
+          "scanned": 64,
+          "selected": 64,
+          "rejections_among_scanned": {}
+        },
+        {
+          "benchmark": "MARS_Bench",
+          "annotation": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3/MARS_Bench_val_V3.json",
+          "source_sha256": "f2bd29111850b700bd947904d5d1dec1161b9b7b39bdb1c83e1d4a821d54468f",
+          "source_count": 600,
+          "scanned": 64,
+          "selected": 64,
+          "rejections_among_scanned": {}
+        }
+      ],
+      "overlap_scope": "exact IDs and identical image file bytes against all selected training candidates",
+      "limits": "Does not prove absence of re-encoded images or semantic/paraphrase duplicates; sampled validation, not full benchmark"
+    },
+    "meta.before.json": {
+      "complete": true,
+      "label": "before",
+      "model_path": "/groups/g900319/home/share/u2025210309/grpo-qwen3vl2b/models/Qwen3-VL-2B-Instruct",
+      "samples_sha256": "28bca7f621f3ee3c981843d581eb7199278f0ec20ef780b8d26b0dbe599c6ae9",
+      "expected_count": 320,
+      "settings": {
+        "n": 1,
+        "temperature": 0.0,
+        "top_p": 1.0,
+        "seed": 42,
+        "max_tokens": 2048,
+        "max_model_len": 8192,
+        "batch_size": 4,
+        "min_pixels": 200704,
+        "max_pixels": 1003520,
+        "skip_special_tokens": true,
+        "tokenizer": "/groups/g900319/home/share/u2025210309/grpo-qwen3vl2b/models/Qwen3-VL-2B-Instruct",
+        "prompt_sha256": "0bf0accf7f9947a41ec92fe73c6f15a23c1f6f8fb631f2086d8c4de7542961ed"
+      }
+    },
+    "meta.after.json": {
+      "complete": true,
+      "label": "after",
+      "model_path": "/groups/g900319/home/share/u2025210309/paired-eval-retry-v5RHjX/merged-step20",
+      "samples_sha256": "28bca7f621f3ee3c981843d581eb7199278f0ec20ef780b8d26b0dbe599c6ae9",
+      "expected_count": 320,
+      "settings": {
+        "n": 1,
+        "temperature": 0.0,
+        "top_p": 1.0,
+        "seed": 42,
+        "max_tokens": 2048,
+        "max_model_len": 8192,
+        "batch_size": 4,
+        "min_pixels": 200704,
+        "max_pixels": 1003520,
+        "skip_special_tokens": true,
+        "tokenizer": "/groups/g900319/home/share/u2025210309/grpo-qwen3vl2b/models/Qwen3-VL-2B-Instruct",
+        "prompt_sha256": "0bf0accf7f9947a41ec92fe73c6f15a23c1f6f8fb631f2086d8c4de7542961ed"
+      }
+    }
+  }
+}

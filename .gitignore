@@ -7,6 +7,11 @@
 **/*.tar.gz
 **/playground
 **/wandb
+**/swanlog/
+
+# Generated responses from the unmodified reference evaluator; source stays tracked.
+/Counterfactual-Eval/eval_result/
+/Counterfactual-Eval/diff_results.json
 
 /pyrightconfig.json
 

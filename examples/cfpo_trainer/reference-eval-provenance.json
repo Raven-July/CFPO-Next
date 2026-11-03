@@ -1,0 +1,32 @@
+{
+  "source_repository": "https://github.com/Raven-July/CFPO",
+  "source_commit": "98ca5a4123be2e85e94855fead46c9a385611136",
+  "source_url": "https://github.com/Raven-July/CFPO/tree/98ca5a4123be2e85e94855fead46c9a385611136/Counterfactual-Eval",
+  "purpose": "Unmodified reference requested in the weekly document; not executed in job 220325. Existing paired sampled results are from evaluate_pair.py, not this code.",
+  "files": [
+    {
+      "path": "Counterfactual-Eval/compare.py",
+      "sha256": "9b9b327d04acfc5c223425c6e14137318829d5300d3206723a1f95cbd1a8816c"
+    },
+    {
+      "path": "Counterfactual-Eval/datasets_config_math.json",
+      "sha256": "e59f0e1f0d1ef01f676285f97ac26eb5285e1366d2d9f74017c7cac209cf757e"
+    },
+    {
+      "path": "Counterfactual-Eval/inference_eval.py",
+      "sha256": "ee4b00d5da76d1e9bff7b5923154bc0e08c96b817ab6623e9e07338fccdeafc3"
+    },
+    {
+      "path": "Counterfactual-Eval/inference_pipeline_math_cfpo.sh",
+      "sha256": "39b0e78c6d3554f316c663ad34f8e81b9167bc3eb8eeaba58414987a06c864dd"
+    },
+    {
+      "path": "Counterfactual-Eval/inference_pipeline_math_grpo.sh",
+      "sha256": "b9eb19098ae8ecd46b423035d5e8c553a36dbc95315298d726b3dd56d586c9fc"
+    },
+    {
+      "path": "Counterfactual-Eval/inference_pipeline_math_papo.sh",
+      "sha256": "c8f2a849baf093d93cbf8171df73d34ea238e6f2e4c060f6bbbb5abed94e807a"
+    }
+  ]
+}
