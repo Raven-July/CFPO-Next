@@ -33,7 +33,7 @@ def inspect(path, show=2):
             "think_open": "<think>" in response,
             "think_close": "</think>" in response,
             "boxed": r"\boxed{" in response,
-            "format": re.fullmatch(r"<think>.*</think>.*\\boxed\{.*\}.*", normalized, re.DOTALL) is not None,
+            "format": re.search(r"</think>.*\\boxed\{.*\}", normalized, re.DOTALL) is not None,
             "system_in_input": "The user asks a question" in row.get("input", ""),
         }
         counts["samples"] += 1

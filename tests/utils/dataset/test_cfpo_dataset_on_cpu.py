@@ -163,6 +163,8 @@ def test_invalid_images_fail_early(tmp_path, problem, images, error):
     "response,truth,score,accuracy,format_score",
     [
         (r"<think>Compute</think>\boxed{2}", "2", 1.0, 1.0, 1.0),
+        (r"Compute</think>\boxed{2}", "2", 1.0, 1.0, 1.0),
+        (r"\boxed{2}</think>", "2", 0.9, 1.0, 0.0),
         (r"<think>Compute</think>\boxed{3}", "2", 0.1, 0.0, 1.0),
         (r"\boxed{2}", "2", 0.9, 1.0, 0.0),
         ("No answer", "2", 0.0, 0.0, 0.0),

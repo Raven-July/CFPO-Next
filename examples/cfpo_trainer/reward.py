@@ -26,7 +26,8 @@ def compute_score(data_source, solution_str, ground_truth, extra_info=None, form
     if not 0 <= format_weight <= 1:
         raise ValueError("format_weight must be between zero and one")
     response = re.sub(r"\s*(<|>|/)\s*", r"\1", solution_str)
-    format_score = float(re.fullmatch(r"<think>.*</think>.*\\boxed\{.*\}.*", response, re.DOTALL) is not None)
+    # Thinking templates can put the opening tag in the prompt instead of the completion.
+    format_score = float(re.search(r"</think>.*\\boxed\{.*\}", response, re.DOTALL) is not None)
     answer = extract_boxed_content(response)
     accuracy_score = float(bool(answer) and grade_answer(answer, str(ground_truth)))
     score = (1 - format_weight) * accuracy_score + format_weight * format_score
