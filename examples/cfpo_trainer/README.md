@@ -162,7 +162,7 @@ as the fully trained baseline.
 
 ```bash
 EVAL_MODEL="$GRPO_ROOT/models/Qwen3-VL-2B-Instruct" EVAL_LABEL=base-n8 \
-  sbatch examples/cfpo_trainer/evaluate.sbatch
+  sbatch --array=0-9%2 examples/cfpo_trainer/evaluate.sbatch
 
 # Replace NNN with the actual completed training step, after verifying accounting.
 CHECKPOINT_ACTOR="$GRPO_ROOT/checkpoints/qwen3-vl-2b-grpo-full/global_step_NNN/actor" \
@@ -176,8 +176,13 @@ python examples/cfpo_trainer/compare_evaluations.py \
 ```
 
 The evaluation wrapper merges FSDP model shards when CHECKPOINT_ACTOR is supplied.
-It checks that every result has as many rows as its annotation file, since the
-original evaluator catches per-dataset errors. Always check Slurm exit status.
+For array evaluation of a trained model, merge it once first and submit the
+array with EVAL_MODEL pointing to that merged directory. Each array task owns one
+of the ten test datasets. The default n=8 uses the reference evaluator's
+temperature 1.0 and reports the mean correctness across the eight completions.
+The wrapper checks both the annotation row count and the completion count per
+row, since the reference evaluator can skip samples or catch dataset errors.
+Check the exit status of all array tasks before comparing results.
 
 ## Full-run memory correction
 
