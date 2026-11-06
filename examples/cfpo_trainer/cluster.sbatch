@@ -19,9 +19,9 @@ export RUN_MODE=${RUN_MODE:-smoke}
 export CFPO_ALGORITHM=${CFPO_ALGORITHM:-grpo}
 # Keep this stable when resubmitting a full run to resume its checkpoints.
 if [[ "$RUN_MODE" == full ]]; then
-  export EXPERIMENT_NAME=${EXPERIMENT_NAME:-cfpo-${CFPO_ALGORITHM}-full-4gpu-bs384-${SLURM_JOB_ID}}
-  if [[ "$EXPERIMENT_NAME" != *-4gpu-bs384* ]]; then
-    echo 'Use a new full experiment name containing -4gpu-bs384 to avoid legacy checkpoints' >&2
+  export EXPERIMENT_NAME=${EXPERIMENT_NAME:-cfpo-${CFPO_ALGORITHM}-full-2gpu-bs384-${SLURM_JOB_ID}}
+  if [[ "$EXPERIMENT_NAME" != *-2gpu-bs384* ]]; then
+    echo 'Use a new full experiment name containing -2gpu-bs384 to avoid legacy checkpoints' >&2
     exit 1
   fi
 elif [[ "$CFPO_ALGORITHM" == dapo ]]; then
@@ -41,7 +41,9 @@ export HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 HYDRA_FULL_ERROR=1 VERL_USE_UV=0 D
 export MODEL_PATH="$GRPO_ROOT/models/Qwen3-VL-2B-Instruct"
 export ROLLOUT_TP=1 ROLLOUT_N=4
 export MAX_PROMPT_LENGTH=4096
-export SWANLAB_LOG_DIR="$GRPO_ROOT/swanlog/$EXPERIMENT_NAME"
+export SWANLAB_LOG_DIR="$GRPO_ROOT/swanlog-v2/$EXPERIMENT_NAME/job-$SLURM_JOB_ID"
+mkdir -p "$SWANLAB_LOG_DIR"
+printf 'SwanLab log directory: %s\n' "$SWANLAB_LOG_DIR"
 export GENERATIONS_DIR="$GRPO_ROOT/generations/$EXPERIMENT_NAME"
 export RAY_TMPDIR="/tmp/cfpo-${SLURM_JOB_ID}"
 cd "$CFPO_REPO"
@@ -57,7 +59,7 @@ case "$RUN_MODE" in
   full)
     export TRAIN_FILE="$GRPO_ROOT/data/cfpo/datasets_train_full.json"
     export TEST_FILE="$GRPO_ROOT/data/cfpo/datasets_val_full.json"
-    export NDEVICES_PER_NODE=4 TRAIN_BATCH_SIZE=384 PPO_MINI_BATCH_SIZE=128
+    export NDEVICES_PER_NODE=2 TRAIN_BATCH_SIZE=384 PPO_MINI_BATCH_SIZE=128
     export MAX_RESPONSE_LENGTH=2048 TOTAL_EPOCHS=2
     export PPO_MAX_TOKEN_LEN_PER_GPU=8192
     EXTRA=(data.train_max_samples=-1 data.val_max_samples=-1 trainer.val_before_train=True
@@ -95,7 +97,7 @@ import swanlab, torch, verl
 expected = int(os.environ["NDEVICES_PER_NODE"])
 visible = torch.cuda.device_count()
 if visible != expected:
-    raise SystemExit(f"Expected {expected} visible GPUs, got {visible}. Submit full mode with sbatch --gres=gpu:4.")
+    raise SystemExit(f"Expected {expected} visible GPUs, got {visible}. Submit with sbatch --gres=gpu:{expected}.")
 print("SwanLab ready", swanlab.__version__)
 print("Visible GPUs:", [torch.cuda.get_device_name(i) for i in range(visible)])
 print(verl.__file__)
