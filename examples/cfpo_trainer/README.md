@@ -209,3 +209,43 @@ native local logs, install dashboard dependencies in the training overlay and
 set `SWANLAB_MODE=local` before submission. The launcher preserves this override.
 Use the existing SSH forwarding route to access port 5092; server/account and
 log-transfer details must be supplied before this can be verified remotely.
+
+## Matched DAPO baseline and experiment exports
+
+Use `CFPO_ALGORITHM=dapo` with the same `RUN_MODE` as GRPO. Model, splits,
+seed, prompt, reward, learning rate, batch sizes, rollout count, token limits,
+validation and checkpoint cadence are inherited from that profile. DAPO starts
+from the original Instruct model in a separate checkpoint directory.
+
+The reference CFPO DAPO script disables KL and clips with lower/upper ratios
+0.20/0.28. V1 uses the same normalized group advantages as GRPO and filters
+groups using the `accuracy` returned by the shared reward function. With four
+binary accuracy scores per group, rejecting identical groups corresponds to
+the reference filter's 0.01–0.99 interval. V1 replenishes filtered groups, so
+matching optimizer steps does not imply matching generation compute. Token-mean
+loss is explicit. Hardware, batching and learning-rate warmup follow the current
+GRPO profile for comparison rather than the reference script's older settings.
+
+```bash
+CFPO_ALGORITHM=dapo RUN_MODE=pilot EXPERIMENT_NAME=qwen3-vl-2b-dapo-pilot \
+  sbatch --time=02:00:00 --account="$USER" --partition=g078t --qos=normal \
+    --comment=xitucheng213 examples/cfpo_trainer/cluster.sbatch
+```
+
+After verifying filtering, gradient updates and checkpoint saves, submit the
+same command with `RUN_MODE=full`, experiment `qwen3-vl-2b-dapo-full`, and the
+normal 12-hour job limit. Compare at matched saved steps using the same
+evaluation configuration. Keep full and pilot results separate.
+
+`export_results.py` reads actual Slurm metrics and optionally copies validation
+generation JSONL with a CoT-format summary and three sampled outputs. Repeat
+`--run` with the same label in submission order to merge resumed job segments.
+Use `--tables-only` on the login node to export without matplotlib. With
+matplotlib installed it also saves training and validation PNGs.
+
+```bash
+python examples/cfpo_trainer/export_results.py \
+  --run "GRPO-pilot=$GRPO_ROOT/logs/cfpo-220056.out" \
+  --generations "GRPO-pilot-20=$GRPO_ROOT/generations/cfpo-pilot-220056/validation/20.jsonl" \
+  --output "$GRPO_ROOT/reports/grpo-pilot" --tables-only
+```

@@ -16,8 +16,13 @@ export CFPO_REPO=${CFPO_REPO:-$GRPO_ROOT/cfpo-next}
 export CFPO_SIF=${CFPO_SIF:-/groups/xitucheng213/home/share/yzy/Counterfact-Projects/verl-vllm018.sif}
 export NVIDIA_LIB=${NVIDIA_LIB:-/opt/app/nvidia/570.195.03/lib}
 export RUN_MODE=${RUN_MODE:-smoke}
+export CFPO_ALGORITHM=${CFPO_ALGORITHM:-grpo}
 # Keep this stable when resubmitting a full run to resume its checkpoints.
-export EXPERIMENT_NAME=${EXPERIMENT_NAME:-cfpo-${RUN_MODE}-${SLURM_JOB_ID}}
+if [[ "$CFPO_ALGORITHM" == dapo ]]; then
+  export EXPERIMENT_NAME=${EXPERIMENT_NAME:-cfpo-dapo-${RUN_MODE}-${SLURM_JOB_ID}}
+else
+  export EXPERIMENT_NAME=${EXPERIMENT_NAME:-cfpo-${RUN_MODE}-${SLURM_JOB_ID}}
+fi
 unset ROCR_VISIBLE_DEVICES HIP_VISIBLE_DEVICES
 /opt/app/singularity/bin/singularity exec --nv -B /groups -B "$NVIDIA_LIB" "$CFPO_SIF" bash <<'INNER'
 set -euo pipefail
@@ -61,6 +66,22 @@ case "$RUN_MODE" in
       trainer.val_before_train=True trainer.log_val_generations=10 trainer.save_freq=10 trainer.test_freq=10)
     ;;
   *) echo "Unknown RUN_MODE=$RUN_MODE" >&2; exit 1 ;;
+esac
+case "$CFPO_ALGORITHM" in
+  grpo) ;;
+  dapo)
+    if [[ "$EXPERIMENT_NAME" != *dapo* ]]; then
+      echo 'Use a separate DAPO experiment name containing dapo' >&2
+      exit 1
+    fi
+    # V1 implements DAPO through normalized group advantages and online group refill.
+    EXTRA+=(algorithm.norm_adv_by_std_in_grpo=True
+      algorithm.filter_groups.enable=True algorithm.filter_groups.metric=accuracy
+      actor_rollout_ref.actor.clip_ratio_low=0.2 actor_rollout_ref.actor.clip_ratio_high=0.28
+      actor_rollout_ref.actor.loss_agg_mode=token-mean
+      actor_rollout_ref.actor.use_kl_loss=False actor_rollout_ref.actor.kl_loss_coef=0.0)
+    ;;
+  *) echo "Unknown CFPO_ALGORITHM=$CFPO_ALGORITHM" >&2; exit 1 ;;
 esac
 bash examples/cfpo_trainer/run_qwen3_vl_2b_fsdp.sh \
   ++ray_kwargs.ray_init.num_cpus=8 \
