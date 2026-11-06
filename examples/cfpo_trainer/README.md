@@ -138,15 +138,18 @@ RUN_MODE=pilot sbatch --time=02:00:00 examples/cfpo_trainer/cluster.sbatch
 
 Inspect gradients, truncation, format/accuracy metrics and generated answers
 before starting full training. Full mode uses every training/validation row,
-two epochs, batch/mini-batch 16, four completions, and length 2048. It checkpoints
+two epochs, a global batch of 384 prompts, a global PPO mini-batch of 128 prompts,
+four completions per prompt, and response length 2048. Full mode requires four
+GPUs on a single node. With 38,870 source rows, the number of complete batches
+before length filtering is 101 per epoch. It checkpoints
 every 20 steps, keeps three actor checkpoints and validates every 100 steps.
 It is bounded by the Slurm 12-hour limit; completion is not guaranteed in one
 allocation. Keep EXPERIMENT_NAME unchanged when resubmitting to resume the most
 recent saved checkpoint. Never resubmit while the same experiment is running.
 
 ```bash
-RUN_MODE=full EXPERIMENT_NAME=qwen3-vl-2b-grpo-full \
-  sbatch examples/cfpo_trainer/cluster.sbatch
+RUN_MODE=full EXPERIMENT_NAME=qwen3-vl-2b-grpo-full-4gpu-bs384 \
+  sbatch --gres=gpu:4 --cpus-per-task=32 --mem=256G examples/cfpo_trainer/cluster.sbatch
 ```
 
 Evaluate the initial base model and the final merged actor using identical n=8
@@ -233,8 +236,8 @@ CFPO_ALGORITHM=dapo RUN_MODE=pilot EXPERIMENT_NAME=qwen3-vl-2b-dapo-pilot \
 ```
 
 After verifying filtering, gradient updates and checkpoint saves, submit the
-same command with `RUN_MODE=full`, experiment `qwen3-vl-2b-dapo-full`, and the
-normal 12-hour job limit. Compare at matched saved steps using the same
+four-GPU full command above with `CFPO_ALGORITHM=dapo` and experiment
+`qwen3-vl-2b-dapo-full-4gpu-bs384`. Compare at matched saved steps using the same
 evaluation configuration. Keep full and pilot results separate.
 
 `export_results.py` reads actual Slurm metrics and optionally copies validation

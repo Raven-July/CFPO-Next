@@ -18,7 +18,13 @@ export NVIDIA_LIB=${NVIDIA_LIB:-/opt/app/nvidia/570.195.03/lib}
 export RUN_MODE=${RUN_MODE:-smoke}
 export CFPO_ALGORITHM=${CFPO_ALGORITHM:-grpo}
 # Keep this stable when resubmitting a full run to resume its checkpoints.
-if [[ "$CFPO_ALGORITHM" == dapo ]]; then
+if [[ "$RUN_MODE" == full ]]; then
+  export EXPERIMENT_NAME=${EXPERIMENT_NAME:-cfpo-${CFPO_ALGORITHM}-full-4gpu-bs384-${SLURM_JOB_ID}}
+  if [[ "$EXPERIMENT_NAME" != *-4gpu-bs384* ]]; then
+    echo 'Use a new full experiment name containing -4gpu-bs384 to avoid legacy checkpoints' >&2
+    exit 1
+  fi
+elif [[ "$CFPO_ALGORITHM" == dapo ]]; then
   export EXPERIMENT_NAME=${EXPERIMENT_NAME:-cfpo-dapo-${RUN_MODE}-${SLURM_JOB_ID}}
 else
   export EXPERIMENT_NAME=${EXPERIMENT_NAME:-cfpo-${RUN_MODE}-${SLURM_JOB_ID}}
@@ -33,13 +39,13 @@ export PATH="$GRPO_ROOT/python-packages/bin:$PATH"
 export HF_HOME="$GRPO_ROOT/hf-cache"
 export HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 HYDRA_FULL_ERROR=1 VERL_USE_UV=0 DEVICE=gpu
 export MODEL_PATH="$GRPO_ROOT/models/Qwen3-VL-2B-Instruct"
-export NDEVICES_PER_NODE=1 ROLLOUT_TP=1 ROLLOUT_N=4
+export ROLLOUT_TP=1 ROLLOUT_N=4
 export MAX_PROMPT_LENGTH=4096
 export SWANLAB_LOG_DIR="$GRPO_ROOT/swanlog/$EXPERIMENT_NAME"
 export GENERATIONS_DIR="$GRPO_ROOT/generations/$EXPERIMENT_NAME"
 export RAY_TMPDIR="/tmp/cfpo-${SLURM_JOB_ID}"
 cd "$CFPO_REPO"
-python -u -c 'import swanlab,torch,verl; print("SwanLab ready", swanlab.__version__); print(torch.cuda.get_device_name(0)); print(verl.__file__)'
+export NDEVICES_PER_NODE=1
 case "$RUN_MODE" in
   smoke)
     export TRAIN_FILE="$GRPO_ROOT/data/cfpo/datasets_train.json"
@@ -51,7 +57,7 @@ case "$RUN_MODE" in
   full)
     export TRAIN_FILE="$GRPO_ROOT/data/cfpo/datasets_train_full.json"
     export TEST_FILE="$GRPO_ROOT/data/cfpo/datasets_val_full.json"
-    export TRAIN_BATCH_SIZE=${TRAIN_BATCH_SIZE:-16} PPO_MINI_BATCH_SIZE=${PPO_MINI_BATCH_SIZE:-16}
+    export NDEVICES_PER_NODE=4 TRAIN_BATCH_SIZE=384 PPO_MINI_BATCH_SIZE=128
     export MAX_RESPONSE_LENGTH=2048 TOTAL_EPOCHS=2
     export PPO_MAX_TOKEN_LEN_PER_GPU=8192
     EXTRA=(data.train_max_samples=-1 data.val_max_samples=-1 trainer.val_before_train=True
@@ -83,8 +89,19 @@ case "$CFPO_ALGORITHM" in
     ;;
   *) echo "Unknown CFPO_ALGORITHM=$CFPO_ALGORITHM" >&2; exit 1 ;;
 esac
+python -u -c '
+import os
+import swanlab, torch, verl
+expected = int(os.environ["NDEVICES_PER_NODE"])
+visible = torch.cuda.device_count()
+if visible != expected:
+    raise SystemExit(f"Expected {expected} visible GPUs, got {visible}. Submit full mode with sbatch --gres=gpu:4.")
+print("SwanLab ready", swanlab.__version__)
+print("Visible GPUs:", [torch.cuda.get_device_name(i) for i in range(visible)])
+print(verl.__file__)
+'
 bash examples/cfpo_trainer/run_qwen3_vl_2b_fsdp.sh \
-  ++ray_kwargs.ray_init.num_cpus=8 \
+  "++ray_kwargs.ray_init.num_cpus=${SLURM_CPUS_PER_TASK:-8}" \
   ++ray_kwargs.ray_init.object_store_memory=2147483648 \
   data.filter_overlong_prompts_workers=2 \
   data.val_batch_size=16 \
