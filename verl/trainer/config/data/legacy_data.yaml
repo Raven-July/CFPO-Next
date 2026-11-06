@@ -26,6 +26,11 @@ val_max_samples: -1
 # The field in the dataset where the prompt is located. Default is 'prompt'.
 prompt_key: prompt
 
+# Optional training-time system message, independent of annotation files.
+# Set one of these. A configured message replaces dataset-provided system messages.
+system_prompt: null
+system_prompt_path: null
+
 # The field used to select the reward function (if using different ones per example).
 reward_fn_key: data_source
 

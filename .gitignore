@@ -130,3 +130,8 @@ logs
 log
 outputs
 .history
+
+# CFPO local experiment artifacts
+**/swanlog/
+**/swanlab/
+**/generations/
