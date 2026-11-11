@@ -26,6 +26,8 @@ GENERATIONS_DIR=${GENERATIONS_DIR:-$REPO_ROOT/generations/$EXPERIMENT_NAME}
 
 bash examples/grpo_trainer/run_qwen3_vl_8b_fsdp.sh \
     transfer_queue.backend.SimpleStorage.num_data_storage_units=1 \
+    '+data.mm_processor_kwargs.min_pixels=200704' \
+    '+data.mm_processor_kwargs.max_pixels=1003520' \
     "data.system_prompt_path=\"$REPO_ROOT/examples/cfpo_trainer/system_prompt.txt\"" \
     data.dataloader_num_workers=0 \
     data.seed=42 \

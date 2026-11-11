@@ -137,7 +137,12 @@ RUN_MODE=pilot sbatch --time=02:00:00 examples/cfpo_trainer/cluster.sbatch
 ```
 
 Inspect gradients, truncation, format/accuracy metrics and generated answers
-before starting full training. Full mode uses every training/validation row,
+before starting full training. The shared launcher explicitly sets image
+`min_pixels=200704` and `max_pixels=1003520` through
+`data.mm_processor_kwargs`. Dataset length filtering and rollout processor
+calls receive these same settings, matching the reference training pixel bounds.
+The reference evaluator applies these bounds when resizing input images.
+Full mode uses every training/validation row,
 two epochs, a global batch of 384 prompts, a global PPO mini-batch of 128 prompts,
 four completions per prompt, and response length 2048. Full mode requires two
 GPUs on a single node. With 38,870 source rows, the number of complete batches
