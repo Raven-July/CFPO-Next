@@ -1,0 +1,73 @@
+{
+  "periodic_validation": {
+    "sources": 5,
+    "N": 2848,
+    "temperature": 0,
+    "n": 1,
+    "aggregation": "sample-weighted accuracy"
+  },
+  "legacy202": {
+    "step0_accuracy": 0.373947,
+    "step202_accuracy": 0.445927,
+    "validation_format_positive": 0,
+    "validation_outputs": 119616
+  },
+  "newreward30": {
+    "step0_accuracy": 0.375351,
+    "step30_accuracy": 0.432233,
+    "training_format_positive": 15,
+    "training_outputs": 57600,
+    "validation_format_positive": 0,
+    "validation_outputs": 19936,
+    "step30_validation_length_rate": 0.19276685393258428
+  },
+  "formatprobe32": {
+    "outputs_per_arm": 160,
+    "correct": [
+      51,
+      55,
+      60
+    ],
+    "format_positive": [
+      0,
+      1,
+      0
+    ],
+    "at_length_limit": [
+      65,
+      66,
+      60
+    ],
+    "scope": "Selected diagnostic samples; original model; no updates"
+  },
+  "diagnostic12": {
+    "outputs_per_cell": 4,
+    "cells": [
+      "HF-original",
+      "vLLM-original",
+      "vLLM-simple"
+    ],
+    "reward_correct": [
+      2,
+      2,
+      0
+    ],
+    "semantic_correct": [
+      2,
+      2,
+      4
+    ],
+    "format_positive": [
+      0,
+      0,
+      0
+    ],
+    "at_length_limit": [
+      2,
+      1,
+      0
+    ],
+    "scope": "Four selected anchors, greedy; original model; no updates"
+  },
+  "final_ten_dataset_Avg_at_8": "not_run"
+}

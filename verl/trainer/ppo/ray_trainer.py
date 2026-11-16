@@ -604,6 +604,8 @@ class RayPPOTrainer:
         sample_scores = []
         sample_turns = []
         sample_uids = []
+        cfpo_sample_ids = []
+        cfpo_output_tokens = []
 
         for test_data in self.val_dataloader:
             test_batch = DataProto.from_single_dict(test_data)
@@ -658,6 +660,12 @@ class RayPPOTrainer:
             output_ids = test_output_gen_batch.batch["responses"]
             output_texts = [self.tokenizer.decode(ids, skip_special_tokens=True) for ids in output_ids]
             sample_outputs.extend(output_texts)
+            if self.config.trainer.get("cfpo_component_metrics", False):
+                extra_infos = test_batch.non_tensor_batch.get("extra_info", [{} for _ in output_texts])
+                cfpo_sample_ids.extend(str(info.get("id", info.get("index", "unknown"))) for info in extra_infos)
+                cfpo_output_tokens.extend(
+                    test_output_gen_batch.batch["attention_mask"][:, -output_ids.shape[-1] :].sum(-1).cpu().tolist()
+                )
 
             test_batch = test_batch.union(test_output_gen_batch)
             test_batch.meta_info["validate"] = True
@@ -695,12 +703,21 @@ class RayPPOTrainer:
         # dump generations
         val_data_dir = self.config.trainer.get("validation_data_dir", None)
         if val_data_dir:
+            dump_extra_infos = reward_extra_infos_dict
+            if self.config.trainer.get("cfpo_component_metrics", False):
+                dump_extra_infos = {
+                    **reward_extra_infos_dict,
+                    "sample_id": cfpo_sample_ids,
+                    "sample_uid": sample_uids,
+                    "data_source": np.concatenate(data_source_lst, axis=0).tolist(),
+                    "output_tokens": cfpo_output_tokens,
+                }
             self._dump_generations(
                 inputs=sample_inputs,
                 outputs=sample_outputs,
                 gts=sample_gts,
                 scores=sample_scores,
-                reward_extra_infos_dict=reward_extra_infos_dict,
+                reward_extra_infos_dict=dump_extra_infos,
                 dump_path=val_data_dir,
             )
 
@@ -1770,6 +1787,10 @@ class RayPPOTrainer:
                 )
                 # collect metrics
                 metrics.update(compute_data_metrics(batch=batch, use_critic=self.use_critic))
+                if self.config.trainer.get("cfpo_component_metrics", False):
+                    from examples.cfpo_trainer.formal_metrics import component_metrics
+
+                    metrics.update(component_metrics(batch.non_tensor_batch))
                 # GDPO per-component reward metrics
                 gdpo_reward_keys = self.config.algorithm.get("gdpo_reward_keys", None)
                 if gdpo_reward_keys and self.config.algorithm.adv_estimator in ("gdpo", AdvantageEstimator.GDPO):

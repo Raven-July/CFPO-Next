@@ -1,0 +1,20 @@
+{
+  "reward_sha256": "9f07ac4d431cb2fc7cca671781244c239d068b4433132bd9a3baba742516ea61",
+  "tokenizer": {
+    "<think>": {
+      "ids": [
+        151667
+      ],
+      "skip_special_true": "<think>",
+      "skip_special_false": "<think>"
+    },
+    "</think>": {
+      "ids": [
+        151668
+      ],
+      "skip_special_true": "</think>",
+      "skip_special_false": "</think>"
+    }
+  },
+  "model": "/groups/xitucheng213/home/share/u2025210309/grpo-qwen3vl2b/models/Qwen3-VL-2B-Instruct"
+}

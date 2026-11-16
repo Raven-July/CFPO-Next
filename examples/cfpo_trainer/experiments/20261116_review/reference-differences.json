@@ -1,0 +1,387 @@
+{
+  "reference_scope": "Pinned public Qwen2.5 GRPO source config plus launcher/defaults, NOT a senior Qwen3 runtime snapshot",
+  "original_commit": "98ca5a4123be2e85e94855fead46c9a385611136",
+  "actual_config": "legacy202/resolved-original.yaml",
+  "rows": [
+    {
+      "item": "base_model",
+      "reference_path": "worker.actor.model.model_path",
+      "reference_value": "/Pretrained/Qwen2.5-VL-3B-Instruct",
+      "actual_path": "actor_rollout_ref.model.path",
+      "actual_value": "/groups/xitucheng213/home/share/u2025210309/grpo-qwen3vl2b/models/Qwen3-VL-2B-Instruct",
+      "literal_equal": false,
+      "impact": "high",
+      "interpretation": "Model migration, not the same reference run"
+    },
+    {
+      "item": "advantage",
+      "reference_path": "algorithm.adv_estimator",
+      "reference_value": "grpo",
+      "actual_path": "algorithm.adv_estimator",
+      "actual_value": "grpo",
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same GRPO selected"
+    },
+    {
+      "item": "prompt_cap",
+      "reference_path": "data.max_prompt_length",
+      "reference_value": 4096,
+      "actual_path": "data.max_prompt_length",
+      "actual_value": 4096,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "response_cap",
+      "reference_path": "data.max_response_length",
+      "reference_value": 2048,
+      "actual_path": "data.max_response_length",
+      "actual_value": 2048,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same; 2048 is inherited, not newly reduced"
+    },
+    {
+      "item": "prompt_batch",
+      "reference_path": "data.rollout_batch_size",
+      "reference_value": 384,
+      "actual_path": "data.train_batch_size",
+      "actual_value": 384,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "answers_per_prompt",
+      "reference_path": "worker.rollout.n",
+      "reference_value": 5,
+      "actual_path": "actor_rollout_ref.rollout.n",
+      "actual_value": 5,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "actor_minibatch",
+      "reference_path": "worker.actor.global_batch_size",
+      "reference_value": 128,
+      "actual_path": "actor_rollout_ref.actor.ppo_mini_batch_size",
+      "actual_value": 128,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Both source implementations multiply by rollout n"
+    },
+    {
+      "item": "update_microbatch",
+      "reference_path": "worker.actor.micro_batch_size_per_device_for_update",
+      "reference_value": 4,
+      "actual_path": "actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu",
+      "actual_value": 4,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same nominal size"
+    },
+    {
+      "item": "experience_microbatch",
+      "reference_path": "worker.actor.micro_batch_size_per_device_for_experience",
+      "reference_value": 8,
+      "actual_path": "actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu",
+      "actual_value": 8,
+      "literal_equal": true,
+      "impact": "medium",
+      "interpretation": "Same"
+    },
+    {
+      "item": "lr",
+      "reference_path": "worker.actor.optim.lr",
+      "reference_value": 1e-06,
+      "actual_path": "actor_rollout_ref.actor.optim.lr",
+      "actual_value": 1e-06,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "warmup_ratio",
+      "reference_path": "worker.actor.optim.lr_warmup_ratio",
+      "reference_value": 0.05,
+      "actual_path": "actor_rollout_ref.actor.optim.lr_warmup_steps_ratio",
+      "actual_value": 0.05,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same formal ratio; short30 uses explicit10"
+    },
+    {
+      "item": "weight_decay",
+      "reference_path": "worker.actor.optim.weight_decay",
+      "reference_value": 0.01,
+      "actual_path": "actor_rollout_ref.actor.optim.weight_decay",
+      "actual_value": 0.01,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "optimizer",
+      "reference_path": "worker.actor.optim.strategy",
+      "reference_value": "adamw_bf16",
+      "actual_path": "actor_rollout_ref.actor.optim.optimizer",
+      "actual_value": "AnyPrecisionAdamW",
+      "literal_equal": false,
+      "impact": "high",
+      "interpretation": "Renamed interface; AnyPrecisionAdamW class body identical"
+    },
+    {
+      "item": "clip_low",
+      "reference_path": "worker.actor.clip_ratio_low",
+      "reference_value": 0.2,
+      "actual_path": "actor_rollout_ref.actor.clip_ratio_low",
+      "actual_value": 0.2,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "clip_high",
+      "reference_path": "worker.actor.clip_ratio_high",
+      "reference_value": 0.3,
+      "actual_path": "actor_rollout_ref.actor.clip_ratio_high",
+      "actual_value": 0.3,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "GRPO default0.3; do not import DAPO script0.28"
+    },
+    {
+      "item": "dual_clip",
+      "reference_path": "worker.actor.clip_ratio_dual",
+      "reference_value": 3.0,
+      "actual_path": "actor_rollout_ref.actor.clip_ratio_c",
+      "actual_value": 3.0,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "ppo_epochs",
+      "reference_path": "worker.actor.ppo_epochs",
+      "reference_value": 1,
+      "actual_path": "actor_rollout_ref.actor.ppo_epochs",
+      "actual_value": 1,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "loss_reduction",
+      "reference_path": "worker.actor.loss_avg_mode",
+      "reference_value": "token",
+      "actual_path": "actor_rollout_ref.actor.loss_agg_mode",
+      "actual_value": "token-mean",
+      "literal_equal": false,
+      "impact": "high",
+      "interpretation": "Names correspond; microbatch accumulation normalization differs"
+    },
+    {
+      "item": "kl_loss",
+      "reference_path": "algorithm.use_kl_loss",
+      "reference_value": true,
+      "actual_path": "actor_rollout_ref.actor.use_kl_loss",
+      "actual_value": true,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same active KL-loss path"
+    },
+    {
+      "item": "kl_coefficient",
+      "reference_path": "algorithm.kl_coef",
+      "reference_value": 0.01,
+      "actual_path": "actor_rollout_ref.actor.kl_loss_coef",
+      "actual_value": 0.01,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "kl_type",
+      "reference_path": "algorithm.kl_penalty",
+      "reference_value": "low_var_kl",
+      "actual_path": "actor_rollout_ref.actor.kl_loss_type",
+      "actual_value": "low_var_kl",
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "temperature",
+      "reference_path": "worker.rollout.temperature",
+      "reference_value": 1.0,
+      "actual_path": "actor_rollout_ref.rollout.temperature",
+      "actual_value": 1.0,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same"
+    },
+    {
+      "item": "top_p",
+      "reference_path": "worker.rollout.top_p",
+      "reference_value": 0.99,
+      "actual_path": "actor_rollout_ref.rollout.top_p",
+      "actual_value": 0.99,
+      "literal_equal": true,
+      "impact": "medium",
+      "interpretation": "Same"
+    },
+    {
+      "item": "top_k",
+      "reference_path": "worker.rollout.top_k",
+      "reference_value": -1,
+      "actual_path": "actor_rollout_ref.rollout.top_k",
+      "actual_value": -1,
+      "literal_equal": true,
+      "impact": "medium",
+      "interpretation": "Same"
+    },
+    {
+      "item": "ignore_eos",
+      "reference_path": "worker.rollout.ignore_eos",
+      "reference_value": false,
+      "actual_path": "actor_rollout_ref.rollout.ignore_eos",
+      "actual_value": false,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same false; not a configured ignore-EOS bug"
+    },
+    {
+      "item": "data_seed",
+      "reference_path": "data.seed",
+      "reference_value": 1,
+      "actual_path": "data.seed",
+      "actual_value": 1,
+      "literal_equal": true,
+      "impact": "medium",
+      "interpretation": "Same"
+    },
+    {
+      "item": "rollout_seed",
+      "reference_path": "worker.rollout.seed",
+      "reference_value": 1,
+      "actual_path": "actor_rollout_ref.rollout.seed",
+      "actual_value": 42,
+      "literal_equal": false,
+      "impact": "medium",
+      "interpretation": "Different random stream; not proof of a semantic bug"
+    },
+    {
+      "item": "min_pixels",
+      "reference_path": "data.min_pixels",
+      "reference_value": 200704,
+      "actual_path": "data.mm_processor_kwargs.min_pixels",
+      "actual_value": 200704,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same area, different processing implementation"
+    },
+    {
+      "item": "max_pixels",
+      "reference_path": "data.max_pixels",
+      "reference_value": 1003520,
+      "actual_path": "data.mm_processor_kwargs.max_pixels",
+      "actual_value": 1003520,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same area, different processing implementation"
+    },
+    {
+      "item": "tensor_parallel",
+      "reference_path": "worker.rollout.tensor_parallel_size",
+      "reference_value": 1,
+      "actual_path": "actor_rollout_ref.rollout.tensor_model_parallel_size",
+      "actual_value": 1,
+      "literal_equal": true,
+      "impact": "medium",
+      "interpretation": "Same"
+    },
+    {
+      "item": "gpu_memory_utilization",
+      "reference_path": "worker.rollout.gpu_memory_utilization",
+      "reference_value": 0.6,
+      "actual_path": "actor_rollout_ref.rollout.gpu_memory_utilization",
+      "actual_value": 0.35,
+      "literal_equal": false,
+      "impact": "runtime",
+      "interpretation": "Concurrency/memory difference"
+    },
+    {
+      "item": "enforce_eager",
+      "reference_path": "worker.rollout.enforce_eager",
+      "reference_value": false,
+      "actual_path": "actor_rollout_ref.rollout.enforce_eager",
+      "actual_value": true,
+      "literal_equal": false,
+      "impact": "runtime",
+      "interpretation": "Different execution path; no direct efficacy conclusion"
+    },
+    {
+      "item": "chunked_prefill",
+      "reference_path": "worker.rollout.enable_chunked_prefill",
+      "reference_value": false,
+      "actual_path": "actor_rollout_ref.rollout.enable_chunked_prefill",
+      "actual_value": true,
+      "literal_equal": false,
+      "impact": "runtime",
+      "interpretation": "Different execution path; retain for diagnostic then isolate if necessary"
+    },
+    {
+      "item": "batched_token_budget",
+      "reference_path": "worker.rollout.max_num_batched_tokens",
+      "reference_value": 8192,
+      "actual_path": "actor_rollout_ref.rollout.max_num_batched_tokens",
+      "actual_value": 6144,
+      "literal_equal": false,
+      "impact": "runtime",
+      "interpretation": "8192 vs6144; total context remains6144"
+    },
+    {
+      "item": "gpu_count",
+      "reference_path": "trainer.n_gpus_per_node",
+      "reference_value": 2,
+      "actual_path": "trainer.n_gpus_per_node",
+      "actual_value": 2,
+      "literal_equal": true,
+      "impact": "runtime",
+      "interpretation": "Same2"
+    },
+    {
+      "item": "epochs",
+      "reference_path": "trainer.total_epochs",
+      "reference_value": 2,
+      "actual_path": "trainer.total_epochs",
+      "actual_value": 2,
+      "literal_equal": true,
+      "impact": "high",
+      "interpretation": "Same2"
+    },
+    {
+      "item": "validation_frequency",
+      "reference_path": "trainer.val_freq",
+      "reference_value": 5,
+      "actual_path": "trainer.test_freq",
+      "actual_value": 5,
+      "literal_equal": true,
+      "impact": "monitoring",
+      "interpretation": "Same5"
+    },
+    {
+      "item": "save_frequency",
+      "reference_path": "trainer.save_freq",
+      "reference_value": 50,
+      "actual_path": "trainer.save_freq",
+      "actual_value": 50,
+      "literal_equal": true,
+      "impact": "monitoring",
+      "interpretation": "Same50 formal; short30 uses10"
+    }
+  ]
+}

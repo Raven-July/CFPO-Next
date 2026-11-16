@@ -14,7 +14,8 @@ tf_overlay=${CFPO_TF_OVERLAY:-/groups/xitucheng213/home/share/u2025210309/tf-cc7
 logging_overlay=${CFPO_LOGGING_OVERLAY:-/groups/xitucheng213/home/share/u2025210309/swanlab-env-ecn63f2h/site-packages}
 export PYTHONPATH="$logging_overlay:$tf_overlay:$repo"
 export PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
-export HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 SWANLAB_MODE=offline
+export HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1
+export SWANLAB_MODE=${CFPO_SWANLAB_MODE:-offline}
 export SWANLAB_LOG_DIR="$CFPO_RUN_DIR/swanlog"
 model=${MODEL_PATH:-$work/models/Qwen3-VL-2B-Instruct}
 train_file=${TRAIN_FILE:-$repo/examples/cfpo_trainer/datasets_math_train.json}
@@ -27,10 +28,11 @@ checkpoint_contents=${CHECKPOINT_SAVE_CONTENTS:-'["model","extra"]'}
 max_response_length=${MAX_RESPONSE_LENGTH:-1024}
 max_model_len=$((2048 + max_response_length))
 cd "$repo"
+hydra_flags=()
 if [ "$mode" = --check-config ]; then
-    set -- --cfg job --resolve "$@"
+    hydra_flags=(--cfg job --resolve)
 fi
-exec python3 -u -m verl.trainer.main_ppo \
+exec python3 -u -m verl.trainer.main_ppo "${hydra_flags[@]}" \
     algorithm.adv_estimator=grpo \
     algorithm.use_kl_in_reward=False \
     data.train_files="$train_file" \
@@ -100,6 +102,6 @@ exec python3 -u -m verl.trainer.main_ppo \
     ++ray_kwargs.ray_init.runtime_env.env_vars.LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}" \
     '++ray_kwargs.ray_init.runtime_env.env_vars.HF_HUB_OFFLINE="1"' \
     '++ray_kwargs.ray_init.runtime_env.env_vars.HF_DATASETS_OFFLINE="1"' \
-    ++ray_kwargs.ray_init.runtime_env.env_vars.SWANLAB_MODE=offline \
+    ++ray_kwargs.ray_init.runtime_env.env_vars.SWANLAB_MODE="$SWANLAB_MODE" \
     ++ray_kwargs.ray_init.runtime_env.env_vars.SWANLAB_LOG_DIR="$CFPO_RUN_DIR/swanlog" \
     "$@"

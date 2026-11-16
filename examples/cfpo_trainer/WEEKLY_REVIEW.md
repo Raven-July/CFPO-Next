@@ -1,5 +1,20 @@
 # Weekly requirements review 2026-11-03
 
+2026-11-04 follow-up: Bao explicitly adopted the supervisor's clarified result
+submission requirements. [RESULTS_WORKFLOW.md](RESULTS_WORKFLOW.md) is the owning
+workflow for future delivery: native SwanLab local dashboard with training
+accuracy/reward, actual in-training validation generations, and every agreed
+dataset in the results table. This review retains historical facts; the bounded
+pilot below does not satisfy all three clarified requirements.
+
+Additional clarification on 2026-11-04: the supervisor states the complete design
+has 202 steps and conservatively needs two GPUs. The original full-data,
+batch-384, two-epoch setup already implies a complete training budget; absence
+of a separately written numeric threshold did not make that budget undefined.
+The 20-step, batch-4, single-GPU pilot is not an equivalent partial completion
+measured as 20/202. Historical scope statements below describe the bounded run,
+not a reduction of the supervisor's final baseline requirement.
+
 Source: [2026-10-27 weekly task](https://docs.qq.com/doc/DRXB1cEhtT1FZQXJ6),
 checked against Bao's exported Word text and all three embedded images.
 Export SHA-256: `7538987e1b7ab379a6c5811bb87995926cf015bf42530020133fdd0fcbbb29f3`.

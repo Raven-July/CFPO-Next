@@ -1,0 +1,85 @@
+{
+  "base_commit": "0c6bd1855ccf31f711924e66a70a1d25387425b0",
+  "files": [
+    {
+      "path": "examples/cfpo_trainer/FORMAL_REVIEW.md",
+      "sha256": "a893270cadfe2126554ce7504563a3a0cadf753516756e7c67c90277992d402f"
+    },
+    {
+      "path": "examples/cfpo_trainer/README.md",
+      "sha256": "6e7fae6345af33e40a579851e454c2034d9cc9fcb875eee705067f7d119d683b"
+    },
+    {
+      "path": "examples/cfpo_trainer/RESULTS_WORKFLOW.md",
+      "sha256": "e076c3d5b55999239d4709f14841277a48cd4b3a8f45d6494aba8ebe6b03467d"
+    },
+    {
+      "path": "examples/cfpo_trainer/WEEKLY_REVIEW.md",
+      "sha256": "78399b0ee67c9e1ed13deb313fd1679950599cf09efa3b1b1f0f97db11f487ef"
+    },
+    {
+      "path": "examples/cfpo_trainer/evaluate_full.py",
+      "sha256": "4590e1dfa29d6669aad05b42d75fcd0b0e1dfd3490ef4be5b47f12f4291cb7e6"
+    },
+    {
+      "path": "examples/cfpo_trainer/formal_contract.py",
+      "sha256": "e9093372a1066211fd10744e8fa5e0c8bce793b6ca788314e9ca35fb9a441f0a"
+    },
+    {
+      "path": "examples/cfpo_trainer/formal_job.sbatch",
+      "sha256": "c7365a6a56a1f0dc7878b05b9b41ad4d544e9f21984a0deb7a905221151ec5c1"
+    },
+    {
+      "path": "examples/cfpo_trainer/formal_metrics.py",
+      "sha256": "e4fb80d645650e60c585e7be8d0a7f88d95080b9d6fe0131be662aca673168df"
+    },
+    {
+      "path": "examples/cfpo_trainer/formal_tools.py",
+      "sha256": "cb654b4505d5da6f36451a9d1cebc8607055cfc2ecc49b7ee7ab665f4816062f"
+    },
+    {
+      "path": "examples/cfpo_trainer/format_prompt/reference_base.jinja",
+      "sha256": "eb162a19038d47e4311bd4995777d94be80e544b9e31195d84464e2eec442f03"
+    },
+    {
+      "path": "examples/cfpo_trainer/reference-inputs.json",
+      "sha256": "69da382621e6575c2c174e362779704e927f4c60d57da2a821f2268c895049d8"
+    },
+    {
+      "path": "examples/cfpo_trainer/reference-optimizer-provenance.json",
+      "sha256": "5535b39d02d135876ed07d0eedc98fd1f9f3ea319f2e3ffc739023c1eaa3a16d"
+    },
+    {
+      "path": "examples/cfpo_trainer/reference_optimizer.py",
+      "sha256": "dd41939a47f905d01a5641c949ab28bdab363b59f00c6888b97e9f4de501f202"
+    },
+    {
+      "path": "examples/cfpo_trainer/run_formal.sh",
+      "sha256": "459d606f3c9ace2abd3b56acfa59768f15a282e35e6c3d8926d3fb268d443f37"
+    },
+    {
+      "path": "examples/cfpo_trainer/run_grpo.sh",
+      "sha256": "2aa87c4f9159fedeedfaeba967fe7073f41207099c3534a1b8810e2b7b6bd418"
+    },
+    {
+      "path": "examples/cfpo_trainer/test_evaluate_full.py",
+      "sha256": "2fd7c3407f9c14fd8f9a073c71c49315064f08ffd8de29f48c6d8d5ef0b45a15"
+    },
+    {
+      "path": "examples/cfpo_trainer/test_formal_contract.py",
+      "sha256": "2d1666d72098e81d53e6d57b2ab56a99e33980b9a31333a844f95bf20645c7cc"
+    },
+    {
+      "path": "examples/cfpo_trainer/test_formal_tools.py",
+      "sha256": "21d0c22152f5e9b977115ee9ca9c206c9bea8887b3d0a17ac3485ce4e8cfa1cc"
+    },
+    {
+      "path": "examples/cfpo_trainer/test_reference_optimizer.py",
+      "sha256": "18d2eeaf901924e2bf0f9b817070be2baffac1fe1c04a2627e150b0d0c43ed63"
+    },
+    {
+      "path": "verl/trainer/ppo/ray_trainer.py",
+      "sha256": "ccff25eb2cfdcda1a12d878d218e74fb8c354c8b985aa38a937366211a35b7d8"
+    }
+  ]
+}

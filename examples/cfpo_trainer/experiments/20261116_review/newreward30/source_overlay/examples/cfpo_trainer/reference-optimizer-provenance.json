@@ -1,0 +1,6 @@
+{
+  "source": "Raven-July/CFPO/verl/utils/torch_functional.py:AnyPrecisionAdamW",
+  "source_file_sha256": "6b87a68df6c44b22501f12851711b0ffd5e795501e7732ab443856507a7296cd",
+  "class_source_sha256": "57b709ba2a126ac6ba43f6913ace805ac256aa1c8c5cfbd9caa30f1bb21238d5",
+  "scope": "Original class body unchanged; only imports adapted to CFPO-Next."
+}

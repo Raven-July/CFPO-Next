@@ -1,0 +1,3 @@
+* -text whitespace=cr-at-eol
+legacy202/source_overlay/** -whitespace
+newreward30/source_overlay/** -whitespace

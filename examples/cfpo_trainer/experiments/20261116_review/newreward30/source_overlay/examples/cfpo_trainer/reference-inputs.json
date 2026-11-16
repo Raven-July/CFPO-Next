@@ -1,0 +1,13 @@
+{
+  "source_commit": "98ca5a4123be2e85e94855fead46c9a385611136",
+  "prompt_source": "examples/format_prompt/base.jinja",
+  "prompt_text_sha256": "fae483df58fd623df5aa0c32a20db956814d75f6944db95d420b716aaed328f8",
+  "source_prompt_file_sha256": "eb162a19038d47e4311bd4995777d94be80e544b9e31195d84464e2eec442f03",
+  "source_reward_sha256": "90cb1fa3fbae26d10ca7b5f348385ddf1b81d45da02af50fcee2e2d78fc91f33",
+  "reward_adapter_sha256": "9f07ac4d431cb2fc7cca671781244c239d068b4433132bd9a3baba742516ea61",
+  "legacy_reward_adapter_sha256": "32ce9d72f58c662465ff7ab984c5ac7a161f03f25ebe9c0d80bbad56361f7c9e",
+  "legacy_reward_adapter_path": "reward_function/legacy_base.py",
+  "reward_contract": "meeting-20261111",
+  "reward_contract_source": "审查/会议记录/2026-11-11-GRPO训练复盘.md: 学长提供的compute_score片段",
+  "source_reward_note": "source_reward_sha256 identifies the original upstream implementation; current adapter follows the meeting contract."
+}

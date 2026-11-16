@@ -1,0 +1,38 @@
+{
+  "actor_rollout_ref.actor.optim.lr_warmup_steps": {
+    "original": -1,
+    "validation30": 10
+  },
+  "actor_rollout_ref.rollout.trace.experiment_name": {
+    "original": "train",
+    "validation30": "newreward30-v87nfmcw"
+  },
+  "ray_kwargs.ray_init.runtime_env.env_vars.SWANLAB_LOG_DIR": {
+    "original": "/groups/xitucheng213/home/share/u2025210309/cfpo-formal-20261109-F3PXx3/train/swanlog",
+    "validation30": "/groups/xitucheng213/home/share/u2025210309/cfpo-formal-20261109-F3PXx3/newreward30-v87nfmcw/run/swanlog"
+  },
+  "trainer.default_local_dir": {
+    "original": "/groups/xitucheng213/home/share/u2025210309/cfpo-formal-20261109-F3PXx3/train/checkpoints",
+    "validation30": "/groups/xitucheng213/home/share/u2025210309/cfpo-formal-20261109-F3PXx3/newreward30-v87nfmcw/run/checkpoints"
+  },
+  "trainer.experiment_name": {
+    "original": "train",
+    "validation30": "newreward30-v87nfmcw"
+  },
+  "trainer.rollout_data_dir": {
+    "original": "/groups/xitucheng213/home/share/u2025210309/cfpo-formal-20261109-F3PXx3/train/generations",
+    "validation30": "/groups/xitucheng213/home/share/u2025210309/cfpo-formal-20261109-F3PXx3/newreward30-v87nfmcw/run/generations"
+  },
+  "trainer.save_freq": {
+    "original": 50,
+    "validation30": 10
+  },
+  "trainer.total_training_steps": {
+    "original": 202,
+    "validation30": 30
+  },
+  "trainer.validation_data_dir": {
+    "original": "/groups/xitucheng213/home/share/u2025210309/cfpo-formal-20261109-F3PXx3/train/validation",
+    "validation30": "/groups/xitucheng213/home/share/u2025210309/cfpo-formal-20261109-F3PXx3/newreward30-v87nfmcw/run/validation"
+  }
+}

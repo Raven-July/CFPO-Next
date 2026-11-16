@@ -1,5 +1,17 @@
 # CFPO-Next: Qwen3-VL GRPO adaptation and bounded validation
 
+**2026-11-16 current audit:** see [参考差异与修复](CURRENT_REVIEW.md).
+The old-reward 202-step run, new-reward 30-step run, and original-model inference
+are distinct. Local safeguards were tightened; the new 12-output backend/prompt
+diagnostic completed as job224673; see the review index for all four runs. Historical pilot details below are not current run status.
+
+**2026-11-04 submission standard:** follow [实验执行与结果提交工作流](RESULTS_WORKFLOW.md).
+Formal delivery requires the native SwanLab local dashboard with training
+accuracy/reward, actual generations from in-training validation rounds, and
+results covering every agreed dataset. Static plots, training rollouts and the
+five-source pilot do not substitute for these requirements. The historical
+pilot described below has not met this newer delivery standard.
+
 Data/reward/system-prompt adaptation, a completed 20-step GRPO run, and a paired
 320-sample evaluation are delivered here. These establish the tested training →
 checkpoint → HF export → inference path. They do not establish convergence or a
@@ -28,12 +40,23 @@ It is not a full-training claim.
 
 `data.format_prompt` injects the team system prompt before length filtering and
 rollout, without mutating input or duplicating it; conflicting prompts fail.
-The reference math grader, normalization and format regex are preserved:
-`score = 0.9 * accuracy + 0.1 * format`. Format requires paired `<think>` tags
-followed by `\boxed{}`. It has not been relaxed to hide zero format scores.
+The current `base.py` follows the senior's 2026-11-11 reward contract:
+`score = 0.9 * accuracy + 0.1 * format`, with a closing `</think>` followed by
+`\boxed{}` in the generated completion. The historical paired-tag fullmatch
+implementation remains in `legacy_base.py`; historical scores are unchanged.
+This scoring change does not force the model to generate either marker.
+
+2026-11-11: a separate, unselected candidate
+`reward_function/qwen3_format.py` also accepts reasoning followed by
+`</think>` and `\boxed{}` when the opening tag is outside the generated text.
+It still rejects boxed-only responses. `audit_format.py` compares the rules on
+saved JSONL outputs without changing stored grades. On all 640 historical paired
+outputs both rules score zero: those outputs contain neither think tag.
+The current formal launcher and pinned reward hash still select `base.py`.
+See [检查记录与远端核对步骤](CURRENT_REVIEW.md).
 
 ```text
-data.format_prompt=examples/cfpo_trainer/format_prompt/base.jinja
+data.format_prompt=examples/cfpo_trainer/format_prompt/reference_base.jinja
 reward.custom_reward_function.path=examples/cfpo_trainer/reward_function/base.py
 reward.custom_reward_function.name=compute_score
 ```

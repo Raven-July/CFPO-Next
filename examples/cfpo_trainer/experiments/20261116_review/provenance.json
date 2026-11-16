@@ -1,0 +1,56 @@
+{
+  "base_commit": "0c6bd1855ccf31f711924e66a70a1d25387425b0",
+  "legacy_startup_snapshot_sha256": "9a3167427305ee61153d145a99c9be5cab4ca8561ff0ff252959ae9a6ed9c2aa",
+  "legacy_jobs": [
+    222487,
+    223620
+  ],
+  "newreward30_job": 224397,
+  "formatprobe32_job": 224596,
+  "diagnostic12_job": 224673,
+  "legacy_reward_sha256": "32ce9d72f58c662465ff7ab984c5ac7a161f03f25ebe9c0d80bbad56361f7c9e",
+  "new_reward_sha256": "9f07ac4d431cb2fc7cca671781244c239d068b4433132bd9a3baba742516ea61",
+  "new30_verified_overlay_files": {
+    "examples/cfpo_trainer/evaluate_full.py": "4590e1dfa29d6669aad05b42d75fcd0b0e1dfd3490ef4be5b47f12f4291cb7e6",
+    "examples/cfpo_trainer/formal_contract.py": "9f6b05c123c856bc192a5efce819bd2402294bc194382347021ea90f4de94f54",
+    "examples/cfpo_trainer/formal_job.sbatch": "c7365a6a56a1f0dc7878b05b9b41ad4d544e9f21984a0deb7a905221151ec5c1",
+    "examples/cfpo_trainer/formal_metrics.py": "e4fb80d645650e60c585e7be8d0a7f88d95080b9d6fe0131be662aca673168df",
+    "examples/cfpo_trainer/FORMAL_REVIEW.md": "a893270cadfe2126554ce7504563a3a0cadf753516756e7c67c90277992d402f",
+    "examples/cfpo_trainer/formal_tools.py": "cb654b4505d5da6f36451a9d1cebc8607055cfc2ecc49b7ee7ab665f4816062f",
+    "examples/cfpo_trainer/README.md": "6e7fae6345af33e40a579851e454c2034d9cc9fcb875eee705067f7d119d683b",
+    "examples/cfpo_trainer/reference-inputs.json": "3aabcbb66e6055bf6759ff76a58376d8035e91c9c9b184c25f2482a2de4ec1c2",
+    "examples/cfpo_trainer/reference-optimizer-provenance.json": "5535b39d02d135876ed07d0eedc98fd1f9f3ea319f2e3ffc739023c1eaa3a16d",
+    "examples/cfpo_trainer/reference_optimizer.py": "dd41939a47f905d01a5641c949ab28bdab363b59f00c6888b97e9f4de501f202",
+    "examples/cfpo_trainer/RESULTS_WORKFLOW.md": "e7cea12a64e3301407f9351149d1b51c47502914842dd9fa6326b88720bad8e8",
+    "examples/cfpo_trainer/run_formal.sh": "459d606f3c9ace2abd3b56acfa59768f15a282e35e6c3d8926d3fb268d443f37",
+    "examples/cfpo_trainer/run_grpo.sh": "2aa87c4f9159fedeedfaeba967fe7073f41207099c3534a1b8810e2b7b6bd418",
+    "examples/cfpo_trainer/run_validation30.sh": "b507beada0ac4dfa43a05614b1d1f07bc394a49b758135536d2ab17ff8d2948a",
+    "examples/cfpo_trainer/test_evaluate_full.py": "2fd7c3407f9c14fd8f9a073c71c49315064f08ffd8de29f48c6d8d5ef0b45a15",
+    "examples/cfpo_trainer/test_formal_contract.py": "2d1666d72098e81d53e6d57b2ab56a99e33980b9a31333a844f95bf20645c7cc",
+    "examples/cfpo_trainer/test_formal_tools.py": "21d0c22152f5e9b977115ee9ca9c206c9bea8887b3d0a17ac3485ce4e8cfa1cc",
+    "examples/cfpo_trainer/test_meeting_reward.py": "d989efa88fac37268b1268f8b743c3790ff7b089568419548c5eb157808d4996",
+    "examples/cfpo_trainer/test_reference_optimizer.py": "18d2eeaf901924e2bf0f9b817070be2baffac1fe1c04a2627e150b0d0c43ed63",
+    "examples/cfpo_trainer/WEEKLY_REVIEW.md": "78399b0ee67c9e1ed13deb313fd1679950599cf09efa3b1b1f0f97db11f487ef",
+    "examples/cfpo_trainer/format_prompt/reference_base.jinja": "eb162a19038d47e4311bd4995777d94be80e544b9e31195d84464e2eec442f03",
+    "examples/cfpo_trainer/reward_function/base.py": "9f07ac4d431cb2fc7cca671781244c239d068b4433132bd9a3baba742516ea61",
+    "examples/cfpo_trainer/reward_function/legacy_base.py": "32ce9d72f58c662465ff7ab984c5ac7a161f03f25ebe9c0d80bbad56361f7c9e",
+    "verl/utils/tracking.py": "225fe40a9652bba526ba8b39ac1fef5ded55102e2d5606c5edfa4d0071300f59",
+    "verl/trainer/ppo/ray_trainer.py": "c6625950aebc15cd283cbbb02418582b837fbe10ae6ebbf6c8d7f3b229603ad3"
+  },
+  "source_scope": "Legacy startup overlay on base_commit; new30 reconstructed using original payload and logging patch, each file checked against runtime receipt. Current repository files are the latest local revision, not the historical runtime.",
+  "private_inputs_required": [
+    "dataset annotations",
+    "images",
+    "selected-sample plans",
+    "raw generations",
+    "cluster receipts/manifests"
+  ],
+  "not_published": [
+    "weights",
+    "images",
+    "sample questions/answers",
+    "raw training or validation outputs",
+    "full logs",
+    "credential files"
+  ]
+}
