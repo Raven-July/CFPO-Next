@@ -20,13 +20,16 @@ import logging
 import os
 import re
 import traceback
+from collections.abc import Mapping
 from collections import defaultdict
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Optional
 
 import datasets
 import numpy as np
 import torch
+from jinja2 import Template
 from omegaconf import DictConfig, ListConfig
 from PIL import Image
 from torch.utils.data import Dataset
@@ -80,7 +83,8 @@ class RLHFDataset(Dataset):
     - Supports resuming from checkpoints.
 
     Args:
-        data_files (str or list): Path(s) to Parquet file(s).
+        data_files (str or list): Path(s) to Parquet/JSON files, or dataset descriptors with
+            ``dataset`` and optional ``image`` fields.
         tokenizer (PreTrainedTokenizer): For the tokenization of text to token IDs.
         config (DictConfig): Options like cache_dir, prompt_key, max_prompt_length, truncation, etc.
         processor (ProcessorMixin, optional): Multimodal preprocessor for images/videos.
@@ -96,6 +100,33 @@ class RLHFDataset(Dataset):
     ):
         if not isinstance(data_files, list | ListConfig):
             data_files = [data_files]
+
+        if not data_files:
+            raise ValueError("data_files must not be empty")
+
+        descriptor_flags = [isinstance(data_file, (Mapping, DictConfig)) for data_file in data_files]
+        if any(descriptor_flags) and not all(descriptor_flags):
+            raise TypeError("data_files cannot mix paths and dataset descriptors")
+
+        self.dataset_descriptors = None
+        self.image_dirs = [None] * len(data_files)
+        self.data_sources = [None] * len(data_files)
+        if all(descriptor_flags):
+            descriptors = []
+            for descriptor in data_files:
+                if "dataset" not in descriptor:
+                    raise ValueError("Each dataset descriptor must contain a 'dataset' field")
+
+                dataset_path = os.path.expanduser(os.fspath(descriptor["dataset"]))
+                image_dir = descriptor.get("image")
+                if image_dir is not None:
+                    image_dir = os.path.expanduser(os.fspath(image_dir))
+                descriptors.append({"dataset": dataset_path, "image": image_dir})
+
+            self.dataset_descriptors = copy.deepcopy(descriptors)
+            data_files = [descriptor["dataset"] for descriptor in descriptors]
+            self.image_dirs = [descriptor["image"] for descriptor in descriptors]
+            self.data_sources = [Path(descriptor["dataset"]).stem for descriptor in descriptors]
 
         self.data_files = copy.deepcopy(data_files)
         self.original_data_files = copy.deepcopy(data_files)  # use for resume
@@ -119,6 +150,16 @@ class RLHFDataset(Dataset):
         self.filter_overlong_prompts = config.get("filter_overlong_prompts", True)
         self.apply_chat_template_kwargs = config.get("apply_chat_template_kwargs", {})
         self.mm_processor_kwargs = config.get("mm_processor_kwargs", {})
+        self.answer_key = config.get("answer_key", "answer")
+
+        self.format_prompt_source = None
+        self.format_prompt = None
+        format_prompt_path = config.get("format_prompt")
+        if format_prompt_path:
+            format_prompt_path = os.path.expanduser(os.fspath(format_prompt_path))
+            with open(format_prompt_path, encoding="utf-8") as format_prompt_file:
+                self.format_prompt_source = format_prompt_file.read().strip()
+            self.format_prompt = Template(self.format_prompt_source)
 
         # Mirror AgentLoopWorker's tool loading so length filtering sees the
         # same schemas the rollout will.
@@ -163,12 +204,62 @@ class RLHFDataset(Dataset):
         from verl.utils.fs import copy_to_local
 
         data_files = self.data_files if not use_origin_parquet else self.original_data_files
-        for i, parquet_file in enumerate(data_files):
-            self.data_files[i] = copy_to_local(src=parquet_file, cache_dir=self.cache_dir, use_shm=self.use_shm)
+        self.data_files = [
+            copy_to_local(src=data_file, cache_dir=self.cache_dir, use_shm=self.use_shm) for data_file in data_files
+        ]
+
+    @staticmethod
+    def _resolve_image_path(image: Any, image_dir: Optional[str]) -> Any:
+        if image_dir is None or not isinstance(image, str):
+            return image
+        if os.path.isabs(image) or "://" in image:
+            return image
+        return os.path.join(image_dir, image)
+
+    def _normalize_descriptor_dataset(
+        self,
+        dataframe: datasets.Dataset,
+        image_dir: Optional[str],
+        data_source: str,
+    ) -> datasets.Dataset:
+        """Normalize descriptor-based CFPO data to verl's canonical RL row schema."""
+
+        prompt_key = self.prompt_key
+        image_key = self.image_key
+        answer_key = self.answer_key
+
+        def normalize(example: dict, index: int) -> dict:
+            if prompt_key not in example:
+                raise KeyError(f"Dataset descriptor row is missing prompt key {prompt_key!r}")
+            if "reward_model" not in example and answer_key not in example:
+                raise KeyError(
+                    f"Dataset descriptor row must contain 'reward_model' or answer key {answer_key!r}"
+                )
+
+            updates = {}
+            images = example.get(image_key)
+            if images is not None:
+                updates[image_key] = [self._resolve_image_path(image, image_dir) for image in images]
+
+            answer = example.get(answer_key)
+            if example.get("reward_model") is None:
+                updates["reward_model"] = {"style": "rule", "ground_truth": answer}
+            if not example.get("data_source"):
+                updates["data_source"] = data_source
+
+            extra_info = dict(example.get("extra_info") or {})
+            extra_info.setdefault("index", index)
+            extra_info.setdefault("question", example[prompt_key])
+            if answer is not None:
+                extra_info.setdefault("answer", answer)
+            updates["extra_info"] = extra_info
+            return updates
+
+        return dataframe.map(normalize, with_indices=True, desc=f"Normalizing {data_source}")
 
     def _read_files_and_tokenize(self):
         dataframes = []
-        for parquet_file in self.data_files:
+        for file_index, parquet_file in enumerate(self.data_files):
             # read files and cache
             if parquet_file.endswith(".parquet"):
                 dataframe = datasets.load_dataset("parquet", data_files=parquet_file)["train"]
@@ -176,6 +267,12 @@ class RLHFDataset(Dataset):
                 dataframe = datasets.load_dataset("json", data_files=parquet_file)["train"]
             else:
                 raise ValueError(f"Unsupported file format: {parquet_file}")
+            if self.dataset_descriptors is not None:
+                dataframe = self._normalize_descriptor_dataset(
+                    dataframe,
+                    image_dir=self.image_dirs[file_index],
+                    data_source=self.data_sources[file_index],
+                )
             dataframes.append(dataframe)
         self.dataframe: datasets.Dataset = datasets.concatenate_datasets(dataframes)
 
@@ -256,8 +353,9 @@ class RLHFDataset(Dataset):
                         apply_kwargs.pop("return_dict", None)
                         apply_kwargs.pop("return_tensors", None)
 
+                        messages = self._build_messages(doc, key=prompt_key)
                         tokenized_prompt = tokenizer.apply_chat_template(
-                            doc[prompt_key], add_generation_prompt=True, tokenize=True, **apply_kwargs
+                            messages, add_generation_prompt=True, tokenize=True, **apply_kwargs
                         )
                         return len(normalize_token_ids(tokenized_prompt))
                     except Exception:
@@ -284,14 +382,19 @@ class RLHFDataset(Dataset):
             print(r"old dataloader ckpt file is used, please train from scratch for better ckpt performance")
 
     def __getstate__(self):
+        state = self.__dict__.copy()
+        # Jinja Template instances are not pickleable. Dataset filtering uses
+        # multiprocessing, so rebuild the compiled template in each worker.
+        state["format_prompt"] = None
         if not self.serialize_dataset:
-            state = self.__dict__.copy()
-
             if "dataframe" in state:
                 del state["dataframe"]
-            return state
+        return state
 
-        return self.__dict__.copy()
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        format_prompt_source = getattr(self, "format_prompt_source", None)
+        self.format_prompt = Template(format_prompt_source) if format_prompt_source else None
 
     def __len__(self):
         return len(self.dataframe)
@@ -310,7 +413,24 @@ class RLHFDataset(Dataset):
         Returns:
             messages: List of messages with replaced placeholder.
         """
-        messages: list = example[key]
+        messages = copy.deepcopy(example[key])
+        if isinstance(messages, str):
+            messages = [{"role": "user", "content": messages}]
+        if not isinstance(messages, list):
+            raise TypeError(f"Prompt field {key!r} must be a string or list of messages")
+
+        format_prompt = getattr(self, "format_prompt", None)
+        if format_prompt is not None:
+            for message in reversed(messages):
+                if message.get("role") != "user":
+                    continue
+                content = message.get("content")
+                if not isinstance(content, str):
+                    raise TypeError("format_prompt requires the final user message content to be a string")
+                message["content"] = format_prompt.render(content=content)
+                break
+            else:
+                raise ValueError("format_prompt requires at least one user message")
         # When concatenating multimodal datasets, get will return None for samples without a modality column.
         images = example.get(self.image_key, None) or []
         videos = example.get(self.video_key, None) or []
@@ -551,8 +671,15 @@ class RLHFDataset(Dataset):
 
             split_dataframe = self.dataframe.select(range(start_idx, end_idx))
 
+            split_data_files = self.data_files
+            if self.dataset_descriptors is not None:
+                split_data_files = [
+                    {"dataset": data_file, "image": image_dir}
+                    for data_file, image_dir in zip(self.data_files, self.image_dirs, strict=True)
+                ]
+
             split_dataset = RLHFDataset(
-                data_files=self.data_files,
+                data_files=split_data_files,
                 tokenizer=self.tokenizer,
                 config=self.config,
                 processor=self.processor,

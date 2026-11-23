@@ -18,6 +18,7 @@ import threading
 from copy import deepcopy
 from pathlib import Path
 
+import dill
 import pytest
 import torch
 from omegaconf import OmegaConf
@@ -108,6 +109,70 @@ def test_build_messages_accepts_image_path():
         {"type": "text", "text": "Describe "},
         {"type": "image", "image": image_path},
     ]
+
+
+def test_descriptor_dataset_and_format_prompt(tmp_path):
+    image_dir = tmp_path / "images"
+    image_dir.mkdir()
+    data_file = tmp_path / "math.json"
+    data_file.write_text(
+        json.dumps(
+            [
+                {
+                    "problem": "<image>\nWhat is 1 + 1?",
+                    "images": ["sample.png"],
+                    "answer": "2",
+                    "id": "sample-0",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    format_prompt = tmp_path / "math.jinja"
+    format_prompt.write_text("{{ content | trim }} Solve carefully and use \\boxed{}.", encoding="utf-8")
+    config = OmegaConf.create(
+        {
+            "prompt_key": "problem",
+            "format_prompt": str(format_prompt),
+            "filter_overlong_prompts": False,
+        }
+    )
+
+    dataset = RLHFDataset(
+        data_files=[{"dataset": str(data_file), "image": str(image_dir)}],
+        tokenizer=object(),
+        processor=object(),
+        config=config,
+    )
+    sample = dataset[0]
+    restored_dataset = dill.loads(dill.dumps(dataset))
+
+    assert sample["data_source"] == "math"
+    assert sample["reward_model"] == {"style": "rule", "ground_truth": "2"}
+    assert sample["extra_info"]["answer"] == "2"
+    assert sample["raw_prompt"] == [
+        {
+            "role": "user",
+            "content": [
+                {"type": "image", "image": str(image_dir / "sample.png")},
+                {"type": "text", "text": "\nWhat is 1 + 1? Solve carefully and use \\boxed{}."},
+            ],
+        }
+    ]
+    assert restored_dataset.format_prompt.render(content="Question") == (
+        "Question Solve carefully and use \\boxed{}."
+    )
+
+
+def test_data_files_reject_mixed_paths_and_descriptors():
+    config = OmegaConf.create({"filter_overlong_prompts": False})
+    with pytest.raises(TypeError, match="cannot mix"):
+        RLHFDataset(
+            data_files=["plain.json", {"dataset": "descriptor.json"}],
+            tokenizer=object(),
+            processor=None,
+            config=config,
+        )
 
 
 @pytest.mark.parametrize(

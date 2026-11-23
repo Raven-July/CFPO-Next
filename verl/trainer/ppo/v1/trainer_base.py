@@ -19,8 +19,10 @@ import os
 import uuid
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
+from numbers import Real
 from pprint import pprint
 from typing import Any, Optional
 
@@ -101,6 +103,29 @@ def apply_greedy_sampling_params(params: dict[str, Any]) -> None:
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "INFO"))
+
+
+def _compute_reward_extra_metrics(
+    extra_fields: list[Any], non_padding_mask: np.ndarray, score_mean: float | None = None
+) -> dict[str, float]:
+    """Aggregate numeric reward-function details without changing reward computation."""
+    values_by_key = defaultdict(list)
+    for keep, extra_field in zip(non_padding_mask, extra_fields, strict=False):
+        if not keep or not isinstance(extra_field, Mapping):
+            continue
+        reward_extra_info = extra_field.get("reward_extra_info")
+        if not isinstance(reward_extra_info, Mapping):
+            continue
+        for key, value in reward_extra_info.items():
+            if isinstance(value, np.generic):
+                value = value.item()
+            if isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value):
+                values_by_key[str(key)].append(float(value))
+
+    metrics = {f"train-aux/{key}/mean": float(np.mean(values)) for key, values in values_by_key.items() if values}
+    if score_mean is not None:
+        metrics.setdefault("train-aux/score/mean", float(score_mean))
+    return metrics
 
 
 def _count_tq_prompt_groups(partition_id: str = "train") -> int:
@@ -1883,6 +1908,7 @@ class PPOTrainer(ABC):
             "rm_scores",
             "token_level_rewards",
             "num_turns",
+            "extra_fields",
         ]
         moe_lb_metrics_interval = self.config.actor_rollout_ref.rollout.get("moe_load_balance_metrics_interval", 0)
         data = get_metric_data_with_optional_routed_experts(
@@ -1896,6 +1922,7 @@ class PPOTrainer(ABC):
         )
 
         num_turns = np.array(data.pop("num_turns").tolist())
+        extra_fields = data.pop("extra_fields").tolist()
         prompt_length = data["prompts"].offsets().diff()
         response_length = data["responses"].offsets().diff()
         global_token_num = (prompt_length + response_length).tolist()
@@ -1906,12 +1933,6 @@ class PPOTrainer(ABC):
         spec_drafts = spec_accepts = spec_verifies = None
         mtp_config = getattr(self.config.actor_rollout_ref.model, "mtp", None)
         if mtp_config is not None and mtp_config.enable and mtp_config.enable_rollout:
-            spec_data = tq.kv_batch_get(
-                keys=batch.keys,
-                partition_id=batch.partition_id,
-                select_fields=["extra_fields"],
-            )
-            extra_fields = spec_data.pop("extra_fields").tolist()
             # The rollout omits the spec_* stats when the backend does not report
             # per-request spec-decode stats; leave all three as None in that case.
             if extra_fields and all(
@@ -1946,7 +1967,15 @@ class PPOTrainer(ABC):
                 accumulator=self._rollout_moe_lb_metrics_accumulator,
             )
         )
-        metrics.update(compute_data_metrics(batch=metrics_batch, use_critic=self.use_critic))
+        data_metrics = compute_data_metrics(batch=metrics_batch, use_critic=self.use_critic)
+        metrics.update(data_metrics)
+        metrics.update(
+            _compute_reward_extra_metrics(
+                extra_fields,
+                non_padding_mask,
+                score_mean=data_metrics.get("critic/score/mean"),
+            )
+        )
         metrics.update(compute_timing_metrics(batch=batch, timing_raw=timing_raw))
         n_gpus = self._get_n_gpus_for_throughput()
         metrics.update(compute_throughout_metrics(batch=batch, timing_raw=timing_raw, n_gpus=n_gpus))

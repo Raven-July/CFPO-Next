@@ -1,0 +1,42 @@
+[
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/geometry3k_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/geometry3k_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/WeMath_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/WeMath_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/MMK12_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/MMK12_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/MathVerse-closed_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/MathVerse_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/LogicVista_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/LogicVista_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/MMMUPro-Vision_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/MMMUPro-Vision_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/POPE_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/COCO_val2014_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3/MARS_Bench_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/COCO_val2014_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3/C-VQA-Real_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/COCO_val2014_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/Textvqa_test.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/Textvqa_images"
+    }
+]

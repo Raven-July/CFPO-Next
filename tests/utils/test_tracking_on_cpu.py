@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 import types
 from unittest.mock import MagicMock, call, patch
 
-from verl.utils.tracking import DapoFilteredRewardTableLogger, Tracking, ValidationGenerationsLogger
+from verl.utils.tracking import (
+    DapoFilteredRewardTableLogger,
+    Tracking,
+    ValidationGenerationsLogger,
+    _SwanlabLoggingAdapter,
+)
 
 
 def test_tracking_finish_finalizes_wandb_once():
@@ -109,3 +115,42 @@ def test_validation_generations_logger_logs_trackio_traces():
     assert trace_kwargs["metadata"]["score"] == 0.5
     mock_trackio.log.assert_called_once()
     assert mock_trackio.log.call_args.kwargs["step"] == 7
+
+
+def test_swanlab_adapter_groups_metrics_by_first_path_component():
+    mock_swanlab = MagicMock()
+    mock_run = MagicMock()
+    adapter = _SwanlabLoggingAdapter(mock_swanlab, mock_run)
+
+    adapter.log({"actor/loss": 1.0, "val-aux/math/accuracy/mean@1": 0.5, "epoch": 2}, step=3)
+    adapter.log({"actor/loss": 0.8}, step=4)
+
+    assert mock_run.define_metric.call_args_list == [
+        call("actor/loss", section_name="actor"),
+        call("val-aux/math/accuracy/mean@1", section_name="val-aux"),
+        call("epoch", section_name="metrics"),
+    ]
+    assert mock_swanlab.log.call_args_list == [
+        call(data={"actor/loss": 1.0, "val-aux/math/accuracy/mean@1": 0.5, "epoch": 2}, step=3),
+        call(data={"actor/loss": 0.8}, step=4),
+    ]
+
+
+def test_validation_generations_logger_uses_text_in_swanlab_local_mode():
+    mock_swanlab = MagicMock()
+    first_text, second_text = MagicMock(), MagicMock()
+    mock_swanlab.Text.side_effect = [first_text, second_text]
+    samples = [["question 1", "answer 1", 1.0], ["question 2", "answer 2", 0.0]]
+
+    with (
+        patch.dict(sys.modules, {"swanlab": mock_swanlab}),
+        patch.dict(os.environ, {"SWANLAB_MODE": "local"}),
+    ):
+        ValidationGenerationsLogger().log_generations_to_swanlab(samples, step=7)
+
+    assert mock_swanlab.Text.call_args_list == [
+        call("input: question 1\n\n---\n\noutput: answer 1\n\n---\n\nscore: 1.0", caption="sample 1"),
+        call("input: question 2\n\n---\n\noutput: answer 2\n\n---\n\nscore: 0.0", caption="sample 2"),
+    ]
+    mock_swanlab.log.assert_called_once_with({"val/generations": [first_text, second_text]}, step=7)
+    mock_swanlab.echarts.Table.assert_not_called()

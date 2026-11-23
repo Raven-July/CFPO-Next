@@ -26,6 +26,9 @@ val_max_samples: -1
 # The field in the dataset where the prompt is located. Default is 'prompt'.
 prompt_key: prompt
 
+# Optional Jinja template used to render the final user message.
+format_prompt: null
+
 # The field used to select the reward function (if using different ones per example).
 reward_fn_key: data_source
 

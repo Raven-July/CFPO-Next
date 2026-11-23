@@ -70,6 +70,16 @@ Signed-off-by: Your Name <your.email@example.com>
 
 Review comments from agent bots (e.g., gemini-code-assist) can be outdated or wrong. Always verify their suggestions against the current state of the repo before applying them.
 
+### Shared cluster development
+
+- The Slurm login endpoint is SSH alias `bupt_public` at `10.160.16.3:22854`, with `RemoteForward 7890 127.0.0.1:7890`. Never store the SSH username or password in repository files or agent instructions; request both from the user when access is needed.
+- The login shell and Slurm/Singularity jobs may expose the same shared files through different prefixes (commonly a home-mounted path on login and a group-mounted path on compute nodes). Use `pwd -P` or `readlink -f` to confirm identity; do not copy or synchronize files merely because the displayed prefixes differ.
+- Treat the remote login shell as a file-editing and job-submission environment only. Runtime debugging must happen on a temporary Slurm GPU node inside the same Singularity image used by the target sbatch job.
+- Before debugging, inspect the nearest repository `*.sbatch` file and reuse its partition, allocation metadata, Singularity image, bind mounts, NVIDIA library path, and Python package path. These values define the runnable environment and must not be guessed from the login shell.
+- Use one GPU for ordinary interactive debugging; request multiple GPUs only when reproducing distributed behavior. On the allocated node, enter Singularity with NVIDIA support using a non-login shell, export the job's driver-library and Python-extension paths with the repository first on `PYTHONPATH`, then verify `pip show verl`, imported module paths and versions, `nvidia-smi`, and required Python imports before running tests or training commands. Keep the image authoritative except for intentional external overrides such as the custom Transformers/SwanLab packages; an unrelated external package can silently shadow an image dependency. A login shell may reactivate host Conda and replace the container's Python.
+- Before starting Ray on an NVIDIA allocation, inspect accelerator selector variables inside the container. This cluster's `singularity exec --nv` may set `ROCR_VISIBLE_DEVICES` alongside `CUDA_VISIBLE_DEVICES`; unset the ROCm selectors so verl does not reject the mixed environment. For unattended offline sbatch jobs, also unset proxy variables inherited from the login shell because a localhost proxy backed by SSH `RemoteForward` disappears when that SSH/VS Code session closes.
+- End the allocation as soon as debugging finishes. Exit the interactive shell or let `srun` complete, then confirm with `squeue` that no temporary job remains.
+
 ---
 
 ## Domain-Specific Guides

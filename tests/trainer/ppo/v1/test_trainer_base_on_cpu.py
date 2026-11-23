@@ -15,17 +15,38 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from omegaconf import OmegaConf
 
 from verl.trainer.ppo.v1.replay_buffer import ReplayBuffer, ReplayBufferAsync
-from verl.trainer.ppo.v1.trainer_base import PPOTrainer, apply_greedy_sampling_params
+from verl.trainer.ppo.v1.trainer_base import PPOTrainer, _compute_reward_extra_metrics, apply_greedy_sampling_params
 
 
 def test_greedy_reward_baseline_does_not_request_score_centering_heads():
     params = {"top_p": 0.9, "top_k": 64, "temperature": 1.0, "topk_log_probs": 128, "logprobs": True}
     apply_greedy_sampling_params(params)
     assert params == {"top_p": 1.0, "top_k": -1, "temperature": 0, "logprobs": True}
+
+
+def test_compute_reward_extra_metrics_logs_train_details_and_skips_padding():
+    extra_fields = [
+        {"reward_extra_info": {"accuracy": 1.0, "format": 0.8, "label": "correct"}},
+        {"reward_extra_info": {"accuracy": np.float32(0.0), "format": 0.6}},
+        {"reward_extra_info": {"accuracy": 100.0, "format": 100.0}},
+    ]
+
+    metrics = _compute_reward_extra_metrics(
+        extra_fields,
+        np.array([True, True, False]),
+        score_mean=0.45,
+    )
+
+    assert metrics == {
+        "train-aux/accuracy/mean": 0.5,
+        "train-aux/format/mean": pytest.approx(0.7),
+        "train-aux/score/mean": 0.45,
+    }
 
 
 class _StubTrainer(PPOTrainer):

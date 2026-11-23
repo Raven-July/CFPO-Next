@@ -141,14 +141,14 @@ class Tracking:
 
             if config is None:
                 config = {}  # make sure config is not None, otherwise **config will raise error
-            swanlab.init(
+            swanlab_run = swanlab.init(
                 project=project_name,
                 experiment_name=experiment_name,
                 config={"FRAMEWORK": "verl", **config},
                 logdir=SWANLAB_LOG_DIR,
                 mode=SWANLAB_MODE,
             )
-            self.logger["swanlab"] = swanlab
+            self.logger["swanlab"] = _SwanlabLoggingAdapter(swanlab, swanlab_run)
 
         if "vemlp_wandb" in default_backend:
             import os
@@ -526,6 +526,37 @@ class _TrackioLoggingAdapter:
             self.trackio.finish()
 
 
+class _SwanlabLoggingAdapter:
+    """Keep verl metric names while grouping SwanLab charts by their first path component."""
+
+    def __init__(self, swanlab, run=None):
+        self.swanlab = swanlab
+        self._define_metric = getattr(run, "define_metric", None)
+        self._defined_metrics = set()
+
+    @staticmethod
+    def _section_name(metric_key):
+        section, separator, _ = metric_key.partition("/")
+        return section if separator and section else "metrics"
+
+    def log(self, data, step):
+        if callable(self._define_metric):
+            for metric_key in data:
+                if metric_key in self._defined_metrics:
+                    continue
+                try:
+                    self._define_metric(metric_key, section_name=self._section_name(metric_key))
+                except Exception:
+                    logger.warning("Failed to define SwanLab section for metric '%s'.", metric_key, exc_info=True)
+                finally:
+                    self._defined_metrics.add(metric_key)
+
+        self.swanlab.log(data=data, step=step)
+
+    def finish(self):
+        self.swanlab.finish()
+
+
 class FileLogger:
     def __init__(self, project_name: str, experiment_name: str):
         self.project_name = project_name
@@ -725,6 +756,17 @@ class ValidationGenerationsLogger:
     def log_generations_to_swanlab(self, samples, step):
         """Log samples to swanlab as text"""
         import swanlab
+
+        if os.environ.get("SWANLAB_MODE", "cloud").lower() == "local":
+            text_list = [
+                swanlab.Text(
+                    f"input: {sample[0]}\n\n---\n\noutput: {sample[1]}\n\n---\n\nscore: {sample[2]}",
+                    caption=f"sample {sample_index + 1}",
+                )
+                for sample_index, sample in enumerate(samples)
+            ]
+            swanlab.log({"val/generations": text_list}, step=step)
+            return
 
         swanlab_table = swanlab.echarts.Table()
 

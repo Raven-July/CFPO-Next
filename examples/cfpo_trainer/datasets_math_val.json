@@ -1,0 +1,22 @@
+[
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/geometry3k_val_V3.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/geometry3k_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/LogicVista_val_V3.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/LogicVista_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3-math/MathVerse_val_V3.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/MathVerse_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3/C-VQA-Real_val_V3.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/COCO_val2014_images"
+    },
+    {
+        "dataset": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/V3/MARS_Bench_val_V3.json",
+        "image": "/groups/xitucheng213/home/share/yzy/Counterfact-Projects/Datasets/COCO_val2014_images"
+    }
+]
